@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firebase App</title>
-  
-  <!-- Подключение Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script> <!-- Для Firebase Authentication -->
-
+  <title>Firebase Authentication</title>
 </head>
 <body>
   <h1>Firebase App</h1>
@@ -27,7 +21,12 @@
     <div id="project-list"></div>
   </div>
 
-  <script>
+  <!-- Подключаем Firebase SDK с type="module" -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+
     // Конфигурация Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCPjgBLKi47sdikhR6voAUIV1IrF4HV9ZQ", // Замените на свой API-ключ
@@ -36,14 +35,14 @@
     };
 
     // Инициализация Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     // Функция регистрации пользователя
     async function registerUser(email, password) {
       try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         console.log('Пользователь зарегистрирован:', userCredential.user);
       } catch (error) {
         console.error('Ошибка регистрации:', error);
@@ -53,7 +52,7 @@
     // Функция для входа
     async function loginUser(email, password) {
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log('Пользователь вошел:', userCredential.user);
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'flex';
@@ -66,7 +65,7 @@
     // Функция добавления пользователя в Firestore
     async function addUser(email, password) {
       try {
-        const docRef = await db.collection("users").add({
+        const docRef = await addDoc(collection(db, "users"), {
           email: email,
           password: password,
         });
@@ -80,7 +79,7 @@
     // Функция получения всех пользователей
     async function getUsers() {
       try {
-        const querySnapshot = await db.collection("users").get();
+        const querySnapshot = await getDocs(collection(db, "users"));
         const users = [];
         querySnapshot.forEach((doc) => {
           users.push({ id: doc.id, ...doc.data() });
@@ -96,7 +95,7 @@
     // Функция добавления проекта
     async function addProject(projectName) {
       try {
-        const docRef = await db.collection("projects").add({
+        const docRef = await addDoc(collection(db, "projects"), {
           name: projectName,
         });
         console.log("Проект добавлен с ID:", docRef.id);
@@ -109,7 +108,7 @@
     // Функция получения проектов
     async function getProjects() {
       try {
-        const querySnapshot = await db.collection("projects").get();
+        const querySnapshot = await getDocs(collection(db, "projects"));
         const projects = [];
         querySnapshot.forEach((doc) => {
           projects.push({ id: doc.id, ...doc.data() });
@@ -155,7 +154,7 @@
 
     // Инициализация интерфейса
     updateUI();
-
   </script>
+
 </body>
 </html>
