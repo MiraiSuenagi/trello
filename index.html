@@ -1,404 +1,107 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Система управления проектами</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f5f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    #auth-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 50px;
-    }
-    #auth-container input {
-      margin: 5px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 300px;
-    }
-    #auth-container button {
-      padding: 10px 20px;
-      background: #0079bf;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #auth-container button:hover {
-      background: #005a8c;
-    }
-    #admin-panel {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-    }
-    #admin-panel input {
-      margin: 5px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 300px;
-    }
-    #admin-panel button {
-      padding: 10px 20px;
-      background: #5aac44;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #admin-panel button:hover {
-      background: #519839;
-    }
-    #project-list {
-      display: none;
-      gap: 10px;
-      margin: 20px;
-    }
-    .project {
-      background: #0079bf;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-    }
-    .project:hover {
-      background: #005a8c;
-    }
-    .project .close {
-      margin-left: 10px;
-      background: #d9534f;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .project .close:hover {
-      background: #c9302c;
-    }
-    #board {
-      display: none;
-      gap: 20px;
-      padding: 20px;
-      max-width: 1200px;
-      width: 100%;
-    }
-    .column {
-      background: #ebecf0;
-      border-radius: 8px;
-      padding: 10px;
-      width: 300px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    .column h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      color: #333;
-      text-align: center;
-    }
-    .tasks {
-      flex-grow: 1;
-      padding: 10px;
-      background: #f4f5f7;
-      border-radius: 6px;
-      min-height: 400px;
-      overflow-y: auto;
-    }
-    .task {
-      background: #ffffff;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      cursor: grab;
-      transition: background 0.2s;
-    }
-    .task:hover {
-      background: #f0f8ff;
-    }
-    .add-task-container {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .task-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .add-button {
-      padding: 8px 12px;
-      background: #5aac44;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .add-button:hover {
-      background: #519839;
-    }
-  </style>
-</head>
-<body>
-  <div id="auth-container">
-    <input type="email" id="email" placeholder="Введите email">
-    <input type="password" id="password" placeholder="Введите пароль">
-    <button id="login-button">Войти</button>
-  </div>
-  <div id="admin-panel">
-    <h3>Добавить пользователя</h3>
-    <input type="email" id="new-user-email" placeholder="Email нового пользователя">
-    <input type="password" id="new-user-password" placeholder="Пароль нового пользователя">
-    <button id="add-user-button">Добавить пользователя</button>
-    <div id="user-list"></div>
-  </div>
-  <div id="project-list"></div>
-  <div id="board">
-    <div class="column" id="todo">
-      <h3>To Do</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks"></div>
-    </div>
-    <div class="column" id="in-progress">
-      <h3>In Progress</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks"></div>
-    </div>
-    <div class="column" id="done">
-      <h3>Done</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks"></div>
-    </div>
-  </div>
+// Подключение Supabase SDK
+const { createClient } = supabase;
 
-  <script>
-    const authContainer = document.getElementById('auth-container');
-    const adminPanel = document.getElementById('admin-panel');
-    const projectList = document.getElementById('project-list');
-    const board = document.getElementById('board');
-    const userList = document.getElementById('user-list');
+// Инициализация клиента Supabase
+const supabaseUrl = 'https://nxvvqphmglylnbeoypze.supabase.co'; // Строка 5: Вставьте ваш URL Supabase
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnZxcGhtZ2x5bG5iZW95cHplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3NjczNzgsImV4cCI6MjA1MjM0MzM3OH0.4I4TOuedoeUba4_txr_TmrwfQzZXaXAMvGbllTwZIAo'; // Строка 6: Вставьте ваш ключ API Supabase
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Простая база данных пользователей
-    const users = JSON.parse(localStorage.getItem('users')) || {
-      admin: { email: 'admin@example.com', password: 'admin123' }
-    };
+// Функция авторизации
+async function login(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    alert('Ошибка авторизации: ' + error.message);
+    return null;
+  }
+  return data.user;
+}
 
-    function saveUsers() {
-      localStorage.setItem('users', JSON.stringify(users));
-    }
+// Функция регистрации нового пользователя
+async function registerUser(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) {
+    alert('Ошибка регистрации: ' + error.message);
+    return null;
+  }
+  return data.user;
+}
 
-    function updateUserList() {
-      userList.innerHTML = '<h3>Список пользователей</h3>';
-      for (const [username, { email }] of Object.entries(users)) {
-        const userItem = document.createElement('div');
-        userItem.textContent = `${username}: ${email}`;
-        userList.appendChild(userItem);
-      }
-    }
+// Получение списка пользователей
+async function getUsers() {
+  const { data, error } = await supabase.from('users').select('*');
+  if (error) {
+    alert('Ошибка получения списка пользователей: ' + error.message);
+    return [];
+  }
+  return data;
+}
 
-    // Авторизация
-    document.getElementById('login-button').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+// Сохранение нового пользователя в таблицу
+async function addUser(email, password) {
+  const { error } = await supabase.from('users').insert([{ email, password }]);
+  if (error) {
+    alert('Ошибка добавления пользователя: ' + error.message);
+  } else {
+    alert('Пользователь добавлен успешно!');
+  }
+}
 
-      const user = Object.values(users).find(u => u.email === email && u.password === password);
+// Получение проектов
+async function getProjects() {
+  const { data, error } = await supabase.from('projects').select('*');
+  if (error) {
+    alert('Ошибка загрузки проектов: ' + error.message);
+    return [];
+  }
+  return data;
+}
 
-      if (user) {
-        authContainer.style.display = 'none';
-        projectList.style.display = 'flex';
-        board.style.display = 'none';
-        if (email === 'admin@example.com') {
-          adminPanel.style.display = 'flex';
-          updateUserList();
-        }
-        updateProjectList();
-      } else {
-        alert('Неверный email или пароль');
-      }
-    });
+// Добавление нового проекта
+async function addProject(projectName) {
+  const { error } = await supabase.from('projects').insert([{ name: projectName }]);
+  if (error) {
+    alert('Ошибка добавления проекта: ' + error.message);
+  } else {
+    alert('Проект добавлен успешно!');
+  }
+}
 
-    // Добавление нового пользователя
-    document.getElementById('add-user-button').addEventListener('click', () => {
-      const newEmail = document.getElementById('new-user-email').value.trim();
-      const newPassword = document.getElementById('new-user-password').value.trim();
+// Обновление интерфейса для работы с базой данных
+async function updateUI() {
+  const projects = await getProjects();
+  projectList.innerHTML = '';
+  projects.forEach(project => {
+    const projectButton = document.createElement('div');
+    projectButton.className = 'project';
+    projectButton.textContent = project.name;
+    projectList.appendChild(projectButton);
+  });
+}
 
-      if (!newEmail || !newPassword) {
-        alert('Введите email и пароль');
-        return;
-      }
+// Инициализация приложения
+document.getElementById('login-button').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const user = await login(email, password);
+  if (user) {
+    authContainer.style.display = 'none';
+    adminPanel.style.display = user.email === 'admin@example.com' ? 'flex' : 'none';
+    updateUI();
+  }
+});
 
-      const username = newEmail.split('@')[0];
-      if (users[username]) {
-        alert('Пользователь с таким именем уже существует');
-        return;
-      }
+document.getElementById('add-user-button').addEventListener('click', async () => {
+  const email = document.getElementById('new-user-email').value.trim();
+  const password = document.getElementById('new-user-password').value.trim();
+  await addUser(email, password);
+});
 
-      users[username] = { email: newEmail, password: newPassword };
-      saveUsers();
-      updateUserList();
-      alert('Пользователь добавлен');
-    });
+projectList.addEventListener('click', async () => {
+  const projectName = prompt('Введите имя нового проекта:');
+  if (projectName) {
+    await addProject(projectName);
+    updateUI();
+  }
+});
 
-    let activeProject = null; // Текущий активный проект
-
-    // Функция для обновления списка проектов
-    function updateProjectList() {
-      projectList.innerHTML = '';
-      for (const projectName in projects) {
-        const projectButton = document.createElement('div');
-        projectButton.className = 'project';
-        projectButton.innerHTML = `${projectName} <button class="close">&times;</button>`;
-        projectButton.querySelector('.close').addEventListener('click', (e) => {
-          e.stopPropagation();
-          delete projects[projectName];
-          saveProjects();
-          updateProjectList();
-          board.style.display = 'none';
-        });
-        projectButton.addEventListener('click', () => {
-          activeProject = projectName;
-          loadProject(projectName);
-        });
-        projectList.appendChild(projectButton);
-      }
-      const addProjectButton = document.createElement('div');
-      addProjectButton.className = 'project';
-      addProjectButton.textContent = '+';
-      addProjectButton.addEventListener('click', addProject);
-      projectList.appendChild(addProjectButton);
-    }
-
-    // Добавление нового проекта
-    function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName || projects[projectName]) return;
-      projects[projectName] = { todo: [], 'in-progress': [], done: [] };
-      saveProjects();
-      updateProjectList();
-    }
-
-    // Загрузка проекта
-    function loadProject(projectName) {
-      board.style.display = 'flex';
-      for (const columnId in projects[projectName]) {
-        const tasksContainer = document.getElementById(columnId).querySelector('.tasks');
-        tasksContainer.innerHTML = '';
-        projects[projectName][columnId].forEach(taskText => {
-          const task = createTaskElement(taskText);
-          tasksContainer.appendChild(task);
-        });
-      }
-      saveProjects();
-    }
-
-    // Сохранение проектов в LocalStorage
-    function saveProjects() {
-      localStorage.setItem('projects', JSON.stringify(projects));
-    }
-
-    // Создание задачи
-    function createTaskElement(taskText) {
-      const task = document.createElement('div');
-      task.className = 'task';
-      task.textContent = taskText;
-      task.setAttribute('draggable', true);
-      setupDragAndDrop(task);
-      return task;
-    }
-
-    // Добавление задачи
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const input = button.previousElementSibling;
-        const taskText = input.value.trim();
-        if (!taskText || !activeProject) return;
-
-        const columnId = button.closest('.column').id;
-        projects[activeProject][columnId].push(taskText);
-        const task = createTaskElement(taskText);
-        button.closest('.column').querySelector('.tasks').appendChild(task);
-        input.value = '';
-        saveProjects();
-      });
-    });
-
-    // Настройка Drag and Drop
-    function setupDragAndDrop(task) {
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        saveProjects();
-      });
-    }
-
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', e => {
-        e.preventDefault();
-        const draggingTask = document.querySelector('.dragging');
-        const afterElement = getDragAfterElement(container, e.clientY);
-        if (afterElement == null) {
-          container.appendChild(draggingTask);
-        } else {
-          container.insertBefore(draggingTask, afterElement);
-        }
-      });
-    });
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
-
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
-
-    // Инициализация
-    let projects = JSON.parse(localStorage.getItem('projects')) || {};
-    updateProjectList();
-  </script>
-</body>
-</html>
+updateUI();
