@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Система управления проектами</title>
   <style>
-    /* Стили, как в вашем примере */
+    /* Ваши стили */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -16,11 +16,11 @@
       align-items: center;
       min-height: 100vh;
     }
-    /* Дальше идут стили как в вашем примере... */
+    /* Остальные стили */
   </style>
 </head>
 <body>
-  <!-- Весь HTML-контент остается как есть -->
+  <!-- Ваш HTML-контент -->
   <div id="auth-container">
     <input type="email" id="email" placeholder="Введите email">
     <input type="password" id="password" placeholder="Введите пароль">
@@ -33,16 +33,14 @@
     <button id="add-user-button">Добавить пользователя</button>
     <div id="user-list"></div>
   </div>
-  <div id="project-list"></div>
-  <div id="board">
-    <!-- Структура колонок (To Do, In Progress, Done) остается как есть -->
-  </div>
 
+  <!-- Подключение Firebase через CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js"></script>
 
   <script>
+    // Инициализация Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
@@ -53,163 +51,56 @@
       measurementId: "G-7HPT7Q512K"
     };
 
-    // Инициализация Firebase
+    // Инициализация приложения Firebase
     const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
     const auth = firebase.auth();
+    const firestore = firebase.firestore();
 
-    const authContainer = document.getElementById('auth-container');
-    const adminPanel = document.getElementById('admin-panel');
-    const projectList = document.getElementById('project-list');
-    const board = document.getElementById('board');
-    const userList = document.getElementById('user-list');
-
-    let activeProject = null; // Текущий активный проект
-
-    // Авторизация
+    // Ваш код, связанный с аутентификацией и проектами
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
 
       auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
+        .then(userCredential => {
           const user = userCredential.user;
-          authContainer.style.display = 'none';
-          projectList.style.display = 'flex';
-          board.style.display = 'none';
-          if (email === 'admin@example.com') {
-            adminPanel.style.display = 'flex';
-          }
-          updateProjectList();
+          console.log("Пользователь вошел:", user);
+          // Дальнейшие действия после входа
         })
-        .catch((error) => {
-          alert('Неверный email или пароль');
+        .catch(error => {
+          console.error("Ошибка аутентификации:", error);
+          alert("Неверный email или пароль");
         });
     });
 
-    // Функция для обновления списка проектов
-    function updateProjectList() {
-      db.collection("projects").get().then((querySnapshot) => {
-        projectList.innerHTML = '';
-        querySnapshot.forEach((doc) => {
-          const project = doc.data();
-          const projectButton = document.createElement('div');
-          projectButton.className = 'project';
-          projectButton.innerHTML = `${project.name} <button class="close">&times;</button>`;
-          projectButton.querySelector('.close').addEventListener('click', (e) => {
-            e.stopPropagation();
-            db.collection("projects").doc(doc.id).delete()
-              .then(() => {
-                updateProjectList();
-              });
-          });
-          projectButton.addEventListener('click', () => {
-            activeProject = doc.id;
-            loadProject(doc.id);
-          });
-          projectList.appendChild(projectButton);
-        });
-        const addProjectButton = document.createElement('div');
-        addProjectButton.className = 'project';
-        addProjectButton.textContent = '+';
-        addProjectButton.addEventListener('click', addProject);
-        projectList.appendChild(addProjectButton);
-      });
-    }
-
-    // Добавление нового проекта
-    function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName) return;
-      db.collection("projects").add({
+    // Добавление проекта в Firestore
+    function addProject(projectName) {
+      const userRef = firestore.collection("projects").doc(projectName);
+      userRef.set({
         name: projectName,
-        todo: [],
-        "in-progress": [],
-        done: []
-      }).then(() => {
-        updateProjectList();
+        tasks: []
+      })
+      .then(() => {
+        console.log("Проект добавлен");
+      })
+      .catch((error) => {
+        console.error("Ошибка добавления проекта:", error);
       });
     }
 
-    // Загрузка проекта
-    function loadProject(projectId) {
-      board.style.display = 'flex';
-      db.collection("projects").doc(projectId).get().then((doc) => {
-        const project = doc.data();
-        for (const columnId in project) {
-          if (columnId === 'name') continue;
-          const tasksContainer = document.getElementById(columnId).querySelector('.tasks');
-          tasksContainer.innerHTML = '';
-          project[columnId].forEach(taskText => {
-            const task = createTaskElement(taskText);
-            tasksContainer.appendChild(task);
-          });
-        }
+    // Пример добавления задачи в проект
+    function addTask(projectName, taskText) {
+      const tasksRef = firestore.collection("projects").doc(projectName).collection("tasks");
+      tasksRef.add({
+        text: taskText,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        console.log("Задача добавлена");
+      })
+      .catch((error) => {
+        console.error("Ошибка добавления задачи:", error);
       });
-    }
-
-    // Создание задачи
-    function createTaskElement(taskText) {
-      const task = document.createElement('div');
-      task.className = 'task';
-      task.textContent = taskText;
-      task.setAttribute('draggable', true);
-      setupDragAndDrop(task);
-      return task;
-    }
-
-    // Добавление задачи
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const input = button.previousElementSibling;
-        const taskText = input.value.trim();
-        if (!taskText || !activeProject) return;
-
-        const columnId = button.closest('.column').id;
-        db.collection("projects").doc(activeProject).update({
-          [columnId]: firebase.firestore.FieldValue.arrayUnion(taskText)
-        }).then(() => {
-          const task = createTaskElement(taskText);
-          button.closest('.column').querySelector('.tasks').appendChild(task);
-          input.value = '';
-        });
-      });
-    });
-
-    // Настройка Drag and Drop
-    function setupDragAndDrop(task) {
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-      });
-    }
-
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', e => {
-        e.preventDefault();
-        const draggingTask = document.querySelector('.dragging');
-        const afterElement = getDragAfterElement(container, e.clientY);
-        if (afterElement == null) {
-          container.appendChild(draggingTask);
-        } else {
-          container.insertBefore(draggingTask, afterElement);
-        }
-      });
-    });
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.task:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
   </script>
 </body>
