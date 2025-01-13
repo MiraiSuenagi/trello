@@ -1,133 +1,161 @@
-// Подключение Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase App</title>
+  
+  <!-- Подключение Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script> <!-- Для Firebase Authentication -->
 
-// Конфигурация Firebase (замените на вашу)
-const firebaseConfig = {
-  apiKey: "AIzaSyCPjgBLKi47sdikhR6voAUIV1IrF4HV9ZQ", 
-  authDomain: "trello-e87ad.firebaseapp.com", 
-  projectId: "trello-e87ad", 
-};
+</head>
+<body>
+  <h1>Firebase App</h1>
 
-// Инициализация Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  <div id="auth-container">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="login-button">Login</button>
+  </div>
 
-// Функция добавления пользователя
-async function addUser(email, password) {
-  try {
-    const docRef = await addDoc(collection(db, "users"), {
-      email: email,
-      password: password,
-    });
-    console.log("Пользователь добавлен с ID:", docRef.id);
-  } catch (error) {
-    console.error("Ошибка добавления пользователя:", error);
-    alert("Ошибка добавления пользователя");
-  }
-}
+  <div id="admin-panel" style="display: none;">
+    <button id="add-user-button">Add User</button>
+    <input type="email" id="new-user-email" placeholder="New User Email">
+    <input type="password" id="new-user-password" placeholder="New User Password">
+    <div id="project-list"></div>
+  </div>
 
-// Функция получения пользователей
-async function getUsers() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "users"));
-    const users = [];
-    querySnapshot.forEach((doc) => {
-      users.push({ id: doc.id, ...doc.data() });
-    });
-    return users;
-  } catch (error) {
-    console.error("Ошибка получения пользователей:", error);
-    alert("Ошибка получения списка пользователей");
-    return [];
-  }
-}
+  <script>
+    // Конфигурация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCPjgBLKi47sdikhR6voAUIV1IrF4HV9ZQ", // Замените на свой API-ключ
+      authDomain: "trello-e87ad.firebaseapp.com", // Замените на свой домен
+      projectId: "trello-e87ad", // Замените на свой Project ID
+    };
 
-// Функция добавления проекта
-async function addProject(projectName) {
-  try {
-    const docRef = await addDoc(collection(db, "projects"), {
-      name: projectName,
-    });
-    console.log("Проект добавлен с ID:", docRef.id);
-  } catch (error) {
-    console.error("Ошибка добавления проекта:", error);
-    alert("Ошибка добавления проекта");
-  }
-}
+    // Инициализация Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
-// Функция получения проектов
-async function getProjects() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "projects"));
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      projects.push({ id: doc.id, ...doc.data() });
-    });
-    return projects;
-  } catch (error) {
-    console.error("Ошибка получения проектов:", error);
-    alert("Ошибка получения списка проектов");
-    return [];
-  }
-}
-
-// Обновление интерфейса списка проектов
-async function updateUI() {
-  const projects = await getProjects();
-  const projectList = document.getElementById('project-list');
-  projectList.innerHTML = '';
-  projects.forEach(project => {
-    const projectButton = document.createElement('div');
-    projectButton.className = 'project';
-    projectButton.textContent = project.name;
-    projectList.appendChild(projectButton);
-  });
-}
-
-// Обработчики событий
-const loginButton = document.getElementById('login-button');
-if (loginButton) {
-  loginButton.addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const users = await getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-
-    if (user) {
-      document.getElementById('auth-container').style.display = 'none';
-      document.getElementById('admin-panel').style.display = email === 'admin@example.com' ? 'flex' : 'none';
-      updateUI();
-    } else {
-      alert("Неверный email или пароль");
+    // Функция регистрации пользователя
+    async function registerUser(email, password) {
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        console.log('Пользователь зарегистрирован:', userCredential.user);
+      } catch (error) {
+        console.error('Ошибка регистрации:', error);
+      }
     }
-  });
-}
 
-const addUserButton = document.getElementById('add-user-button');
-if (addUserButton) {
-  addUserButton.addEventListener('click', async () => {
-    const email = document.getElementById('new-user-email').value.trim();
-    const password = document.getElementById('new-user-password').value.trim();
-    if (email && password) {
-      await addUser(email, password);
-      alert("Пользователь добавлен!");
-    } else {
-      alert("Введите email и пароль");
+    // Функция для входа
+    async function loginUser(email, password) {
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.log('Пользователь вошел:', userCredential.user);
+        document.getElementById('auth-container').style.display = 'none';
+        document.getElementById('admin-panel').style.display = 'flex';
+        updateUI();
+      } catch (error) {
+        console.error('Ошибка входа:', error);
+      }
     }
-  });
-}
 
-const projectList = document.getElementById('project-list');
-if (projectList) {
-  projectList.addEventListener('click', async () => {
-    const projectName = prompt('Введите имя нового проекта:');
-    if (projectName) {
-      await addProject(projectName);
-      updateUI();
+    // Функция добавления пользователя в Firestore
+    async function addUser(email, password) {
+      try {
+        const docRef = await db.collection("users").add({
+          email: email,
+          password: password,
+        });
+        console.log("Пользователь добавлен с ID:", docRef.id);
+      } catch (error) {
+        console.error("Ошибка добавления пользователя:", error);
+        alert("Ошибка добавления пользователя");
+      }
     }
-  });
-}
 
-// Инициализация интерфейса
-updateUI();
+    // Функция получения всех пользователей
+    async function getUsers() {
+      try {
+        const querySnapshot = await db.collection("users").get();
+        const users = [];
+        querySnapshot.forEach((doc) => {
+          users.push({ id: doc.id, ...doc.data() });
+        });
+        return users;
+      } catch (error) {
+        console.error("Ошибка получения пользователей:", error);
+        alert("Ошибка получения списка пользователей");
+        return [];
+      }
+    }
+
+    // Функция добавления проекта
+    async function addProject(projectName) {
+      try {
+        const docRef = await db.collection("projects").add({
+          name: projectName,
+        });
+        console.log("Проект добавлен с ID:", docRef.id);
+      } catch (error) {
+        console.error("Ошибка добавления проекта:", error);
+        alert("Ошибка добавления проекта");
+      }
+    }
+
+    // Функция получения проектов
+    async function getProjects() {
+      try {
+        const querySnapshot = await db.collection("projects").get();
+        const projects = [];
+        querySnapshot.forEach((doc) => {
+          projects.push({ id: doc.id, ...doc.data() });
+        });
+        return projects;
+      } catch (error) {
+        console.error("Ошибка получения проектов:", error);
+        alert("Ошибка получения списка проектов");
+        return [];
+      }
+    }
+
+    // Обновление интерфейса списка проектов
+    async function updateUI() {
+      const projects = await getProjects();
+      const projectList = document.getElementById('project-list');
+      projectList.innerHTML = '';
+      projects.forEach(project => {
+        const projectButton = document.createElement('div');
+        projectButton.className = 'project';
+        projectButton.textContent = project.name;
+        projectList.appendChild(projectButton);
+      });
+    }
+
+    // Обработчики событий
+    document.getElementById('login-button').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      await loginUser(email, password);
+    });
+
+    document.getElementById('add-user-button').addEventListener('click', async () => {
+      const email = document.getElementById('new-user-email').value.trim();
+      const password = document.getElementById('new-user-password').value.trim();
+      if (email && password) {
+        await addUser(email, password);
+        alert("Пользователь добавлен!");
+      } else {
+        alert("Введите email и пароль");
+      }
+    });
+
+    // Инициализация интерфейса
+    updateUI();
+
+  </script>
+</body>
+</html>
