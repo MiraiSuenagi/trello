@@ -3,30 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firebase Authentication</title>
+  <title>Firebase App</title>
+  <style>
+    /* Простейшие стили для удобства */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    #auth-container, #admin-panel {
+      margin-bottom: 20px;
+    }
+    .project {
+      background-color: lightblue;
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
+
   <h1>Firebase App</h1>
 
+  <!-- Форма для входа -->
   <div id="auth-container">
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="password" placeholder="Password">
     <button id="login-button">Login</button>
   </div>
 
+  <!-- Панель администратора -->
   <div id="admin-panel" style="display: none;">
     <button id="add-user-button">Add User</button>
     <input type="email" id="new-user-email" placeholder="New User Email">
     <input type="password" id="new-user-password" placeholder="New User Password">
     <div id="project-list"></div>
+    <button id="add-project-button">Add Project</button>
   </div>
 
-  <!-- Подключаем Firebase SDK с type="module" -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+  <!-- Подключаем Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js" type="module"></script>
 
+  <script type="module">
     // Конфигурация Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
@@ -35,51 +55,39 @@
     };
 
     // Инициализация Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    // Функция регистрации пользователя
-    async function registerUser(email, password) {
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log('Пользователь зарегистрирован:', userCredential.user);
-      } catch (error) {
-        console.error('Ошибка регистрации:', error);
-      }
-    }
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
     // Функция для входа
     async function loginUser(email, password) {
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('Пользователь вошел:', userCredential.user);
         document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('admin-panel').style.display = 'flex';
+        document.getElementById('admin-panel').style.display = 'block';
         updateUI();
       } catch (error) {
         console.error('Ошибка входа:', error);
+        alert('Ошибка входа. Проверьте правильность email и пароля.');
       }
     }
 
-    // Функция добавления пользователя в Firestore
+    // Функция добавления пользователя
     async function addUser(email, password) {
       try {
-        const docRef = await addDoc(collection(db, "users"), {
-          email: email,
-          password: password,
-        });
-        console.log("Пользователь добавлен с ID:", docRef.id);
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        console.log('Пользователь зарегистрирован:', userCredential.user);
       } catch (error) {
-        console.error("Ошибка добавления пользователя:", error);
-        alert("Ошибка добавления пользователя");
+        console.error('Ошибка регистрации:', error);
+        alert('Ошибка регистрации.');
       }
     }
 
-    // Функция получения всех пользователей
+    // Функция получения пользователей
     async function getUsers() {
       try {
-        const querySnapshot = await getDocs(collection(db, "users"));
+        const querySnapshot = await db.collection("users").get();
         const users = [];
         querySnapshot.forEach((doc) => {
           users.push({ id: doc.id, ...doc.data() });
@@ -95,7 +103,7 @@
     // Функция добавления проекта
     async function addProject(projectName) {
       try {
-        const docRef = await addDoc(collection(db, "projects"), {
+        const docRef = await db.collection("projects").add({
           name: projectName,
         });
         console.log("Проект добавлен с ID:", docRef.id);
@@ -108,7 +116,7 @@
     // Функция получения проектов
     async function getProjects() {
       try {
-        const querySnapshot = await getDocs(collection(db, "projects"));
+        const querySnapshot = await db.collection("projects").get();
         const projects = [];
         querySnapshot.forEach((doc) => {
           projects.push({ id: doc.id, ...doc.data() });
@@ -121,7 +129,7 @@
       }
     }
 
-    // Обновление интерфейса списка проектов
+    // Обновление UI с проектами
     async function updateUI() {
       const projects = await getProjects();
       const projectList = document.getElementById('project-list');
@@ -152,9 +160,16 @@
       }
     });
 
+    document.getElementById('add-project-button').addEventListener('click', async () => {
+      const projectName = prompt("Введите название нового проекта:");
+      if (projectName) {
+        await addProject(projectName);
+        updateUI();
+      }
+    });
+
     // Инициализация интерфейса
     updateUI();
   </script>
-
 </body>
 </html>
