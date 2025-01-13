@@ -41,28 +41,28 @@
     <button id="add-project-button">Add Project</button>
   </div>
 
-  <!-- Подключаем Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js" type="module"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js" type="module"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js" type="module"></script>
-
+  <!-- Подключаем Firebase через ES модули -->
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
     // Конфигурация Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
-      authDomain: "trellokz123.firebaseapp.com",
-      projectId: "trellokz123",
+      apiKey: "YOUR_API_KEY", // Замените на свой API-ключ
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Замените на свой authDomain
+      projectId: "YOUR_PROJECT_ID", // Замените на свой projectId
     };
 
     // Инициализация Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     // Функция для входа
     async function loginUser(email, password) {
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log('Пользователь вошел:', userCredential.user);
         document.getElementById('auth-container').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
@@ -76,7 +76,7 @@
     // Функция добавления пользователя
     async function addUser(email, password) {
       try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         console.log('Пользователь зарегистрирован:', userCredential.user);
       } catch (error) {
         console.error('Ошибка регистрации:', error);
@@ -87,7 +87,7 @@
     // Функция получения пользователей
     async function getUsers() {
       try {
-        const querySnapshot = await db.collection("users").get();
+        const querySnapshot = await getDocs(collection(db, "users"));
         const users = [];
         querySnapshot.forEach((doc) => {
           users.push({ id: doc.id, ...doc.data() });
@@ -103,7 +103,7 @@
     // Функция добавления проекта
     async function addProject(projectName) {
       try {
-        const docRef = await db.collection("projects").add({
+        const docRef = await addDoc(collection(db, "projects"), {
           name: projectName,
         });
         console.log("Проект добавлен с ID:", docRef.id);
@@ -116,7 +116,7 @@
     // Функция получения проектов
     async function getProjects() {
       try {
-        const querySnapshot = await db.collection("projects").get();
+        const querySnapshot = await getDocs(collection(db, "projects"));
         const projects = [];
         querySnapshot.forEach((doc) => {
           projects.push({ id: doc.id, ...doc.data() });
