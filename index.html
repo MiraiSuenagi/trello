@@ -1,74 +1,81 @@
-// Подключение Supabase SDK
-const { createClient } = supabase;
+// Подключение Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-// Инициализация клиента Supabase
-const supabaseUrl = 'https://nxvvqphmglylnbeoypze.supabase.co'; // Строка 5: Вставьте ваш URL Supabase
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dnZxcGhtZ2x5bG5iZW95cHplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3NjczNzgsImV4cCI6MjA1MjM0MzM3OH0.4I4TOuedoeUba4_txr_TmrwfQzZXaXAMvGbllTwZIAo'; // Строка 6: Вставьте ваш ключ API Supabase
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Конфигурация Firebase (замените на вашу)
+const firebaseConfig = {
+  apiKey: "AIzaSyCPjgBLKi47sdikhR6voAUIV1IrF4HV9ZQ", 
+  authDomain: "trello-e87ad.firebaseapp.com", 
+  projectId: "trello-e87ad", 
+};
 
-// Функция авторизации
-async function login(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert('Ошибка авторизации: ' + error.message);
-    return null;
-  }
-  return data.user;
-}
+// Инициализация Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Функция регистрации нового пользователя
-async function registerUser(email, password) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) {
-    alert('Ошибка регистрации: ' + error.message);
-    return null;
-  }
-  return data.user;
-}
-
-// Получение списка пользователей
-async function getUsers() {
-  const { data, error } = await supabase.from('users').select('*');
-  if (error) {
-    alert('Ошибка получения списка пользователей: ' + error.message);
-    return [];
-  }
-  return data;
-}
-
-// Сохранение нового пользователя в таблицу
+// Функция добавления пользователя
 async function addUser(email, password) {
-  const { error } = await supabase.from('users').insert([{ email, password }]);
-  if (error) {
-    alert('Ошибка добавления пользователя: ' + error.message);
-  } else {
-    alert('Пользователь добавлен успешно!');
+  try {
+    const docRef = await addDoc(collection(db, "users"), {
+      email: email,
+      password: password,
+    });
+    console.log("Пользователь добавлен с ID:", docRef.id);
+  } catch (error) {
+    console.error("Ошибка добавления пользователя:", error);
+    alert("Ошибка добавления пользователя");
   }
 }
 
-// Получение проектов
-async function getProjects() {
-  const { data, error } = await supabase.from('projects').select('*');
-  if (error) {
-    alert('Ошибка загрузки проектов: ' + error.message);
+// Функция получения пользователей
+async function getUsers() {
+  try {
+    const querySnapshot = await getDocs(collection(db, "users"));
+    const users = [];
+    querySnapshot.forEach((doc) => {
+      users.push({ id: doc.id, ...doc.data() });
+    });
+    return users;
+  } catch (error) {
+    console.error("Ошибка получения пользователей:", error);
+    alert("Ошибка получения списка пользователей");
     return [];
   }
-  return data;
 }
 
-// Добавление нового проекта
+// Функция добавления проекта
 async function addProject(projectName) {
-  const { error } = await supabase.from('projects').insert([{ name: projectName }]);
-  if (error) {
-    alert('Ошибка добавления проекта: ' + error.message);
-  } else {
-    alert('Проект добавлен успешно!');
+  try {
+    const docRef = await addDoc(collection(db, "projects"), {
+      name: projectName,
+    });
+    console.log("Проект добавлен с ID:", docRef.id);
+  } catch (error) {
+    console.error("Ошибка добавления проекта:", error);
+    alert("Ошибка добавления проекта");
   }
 }
 
-// Обновление интерфейса для работы с базой данных
+// Функция получения проектов
+async function getProjects() {
+  try {
+    const querySnapshot = await getDocs(collection(db, "projects"));
+    const projects = [];
+    querySnapshot.forEach((doc) => {
+      projects.push({ id: doc.id, ...doc.data() });
+    });
+    return projects;
+  } catch (error) {
+    console.error("Ошибка получения проектов:", error);
+    alert("Ошибка получения списка проектов");
+    return [];
+  }
+}
+
+// Обновление интерфейса списка проектов
 async function updateUI() {
   const projects = await getProjects();
+  const projectList = document.getElementById('project-list');
   projectList.innerHTML = '';
   projects.forEach(project => {
     const projectButton = document.createElement('div');
@@ -78,30 +85,49 @@ async function updateUI() {
   });
 }
 
-// Инициализация приложения
-document.getElementById('login-button').addEventListener('click', async () => {
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const user = await login(email, password);
-  if (user) {
-    authContainer.style.display = 'none';
-    adminPanel.style.display = user.email === 'admin@example.com' ? 'flex' : 'none';
-    updateUI();
-  }
-});
+// Обработчики событий
+const loginButton = document.getElementById('login-button');
+if (loginButton) {
+  loginButton.addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const users = await getUsers();
+    const user = users.find(u => u.email === email && u.password === password);
 
-document.getElementById('add-user-button').addEventListener('click', async () => {
-  const email = document.getElementById('new-user-email').value.trim();
-  const password = document.getElementById('new-user-password').value.trim();
-  await addUser(email, password);
-});
+    if (user) {
+      document.getElementById('auth-container').style.display = 'none';
+      document.getElementById('admin-panel').style.display = email === 'admin@example.com' ? 'flex' : 'none';
+      updateUI();
+    } else {
+      alert("Неверный email или пароль");
+    }
+  });
+}
 
-projectList.addEventListener('click', async () => {
-  const projectName = prompt('Введите имя нового проекта:');
-  if (projectName) {
-    await addProject(projectName);
-    updateUI();
-  }
-});
+const addUserButton = document.getElementById('add-user-button');
+if (addUserButton) {
+  addUserButton.addEventListener('click', async () => {
+    const email = document.getElementById('new-user-email').value.trim();
+    const password = document.getElementById('new-user-password').value.trim();
+    if (email && password) {
+      await addUser(email, password);
+      alert("Пользователь добавлен!");
+    } else {
+      alert("Введите email и пароль");
+    }
+  });
+}
 
+const projectList = document.getElementById('project-list');
+if (projectList) {
+  projectList.addEventListener('click', async () => {
+    const projectName = prompt('Введите имя нового проекта:');
+    if (projectName) {
+      await addProject(projectName);
+      updateUI();
+    }
+  });
+}
+
+// Инициализация интерфейса
 updateUI();
