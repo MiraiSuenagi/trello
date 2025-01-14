@@ -278,7 +278,7 @@ auth.onAuthStateChanged(user => {
     
     // Отображаем информацию о пользователе
     const userInfoElement = document.getElementById('user-info');
-    userInfoElement.textContent = Привет, ${user.email};
+    userInfoElement.textContent = `Привет, ${user.email}`;
     
   } else {
     authContainer.style.display = 'flex';
@@ -400,7 +400,8 @@ auth.onAuthStateChanged(user => {
       document.querySelectorAll('.project').forEach(projectElement => {
         projectElement.classList.remove('active-project');
       });
-      document.querySelector([data-id="${projectId}"]).classList.add('active-project');
+      document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
+
     }
 
     // Create task element
@@ -433,7 +434,8 @@ auth.onAuthStateChanged(user => {
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => {
-          document.querySelector([data-id="${taskId}"]).remove();
+          document.querySelector(`[data-id="${taskId}"]`).remove();
+
         });
     }
 
