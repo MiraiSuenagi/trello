@@ -5,7 +5,199 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
-    /* (Оставляем стили без изменений) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f5f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+    #auth-container input {
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 300px;
+    }
+    #auth-container button {
+      padding: 10px 20px;
+      background: #0079bf;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #auth-container button:hover {
+      background: #005a8c;
+    }
+    #project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: absolute;
+      top: 50px;
+      left: 20px;
+    }
+    .project {
+      background: #ffffff;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .project:hover {
+      background: #f0f0f0;
+    }
+    .delete-project {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .delete-project:hover {
+      background: #c9302c;
+    }
+    #add-project-button {
+      padding: 10px;
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    #add-project-button:hover {
+      background: #519839;
+    }
+    #board {
+      display: none;
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin-left: 360px; /* увеличиваем сдвиг */
+    }
+    .column {
+      background: #ebecf0;
+      border-radius: 8px;
+      padding: 10px;
+      width: 300px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    .column h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+    }
+    .tasks {
+      flex-grow: 1;
+      padding: 10px;
+      background: #f4f5f7;
+      border-radius: 6px;
+      min-height: 300px;
+      overflow-y: auto;
+    }
+    .task {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      cursor: grab;
+      transition: background 0.2s;
+    }
+    .task:hover {
+      background: #f0f8ff;
+    }
+    .delete-task {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-top: 5px;
+    }
+    .delete-task:hover {
+      background: #c9302c;
+    }
+    .add-task-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .task-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .add-button {
+      padding: 8px 12px;
+      background: #5aac44;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #519839;
+    }
+    #logout-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #logout-button:hover {
+      background: #c9302c;
+    }
+    .active-project {
+      background: #cce5ff;
+    }
+    .assign-button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .assign-button:hover {
+      background: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -52,6 +244,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
   <script>
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
@@ -72,9 +265,8 @@
     const logoutButton = document.getElementById('logout-button');
 
     let activeProject = null;
-    let projectsCache = {};
-    let tasksCache = {};
 
+    // Check auth state
     auth.onAuthStateChanged(user => {
       if (user) {
         authContainer.style.display = 'none';
@@ -87,6 +279,7 @@
       }
     });
 
+    // Login
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -103,6 +296,7 @@
         });
     });
 
+    // Logout
     logoutButton.addEventListener('click', () => {
       auth.signOut()
         .then(() => {
@@ -113,18 +307,20 @@
         .catch(error => console.error('Ошибка выхода:', error));
     });
 
+    // Load projects
     function loadProjects() {
       projectList.innerHTML = '<button id="add-project-button">+</button>';
+
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
       firestore.collection('projects').get()
         .then(snapshot => {
           snapshot.forEach(doc => {
             const project = doc.data();
-            projectsCache[doc.id] = project;
             const projectElement = document.createElement('div');
             projectElement.className = 'project';
             projectElement.setAttribute('data-id', doc.id);
+
             const projectName = document.createElement('span');
             projectName.textContent = project.name;
             projectName.addEventListener('click', () => openProject(doc.id));
@@ -141,6 +337,7 @@
         });
     }
 
+    // Add project with unique name check
     function addProject() {
       const projectName = prompt('Введите название проекта:');
       if (projectName) {
@@ -159,6 +356,7 @@
       }
     }
 
+    // Delete project
     function deleteProject(projectId) {
       if (confirm('Вы уверены, что хотите удалить этот проект?')) {
         firestore.collection('projects').doc(projectId).delete()
@@ -170,38 +368,29 @@
       }
     }
 
+    // Open project
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
 
-      if (tasksCache[projectId]) {
-        renderTasks(tasksCache[projectId]);
-      } else {
-        firestore.collection('projects').doc(projectId).collection('tasks').get()
-          .then(snapshot => {
-            const tasks = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            tasksCache[projectId] = tasks;
-            renderTasks(tasks);
+      firestore.collection('projects').doc(projectId).collection('tasks').get()
+        .then(snapshot => {
+          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
+          snapshot.forEach(doc => {
+            const task = doc.data();
+            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
+            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
-      }
+        });
 
+      // Подсвечиваем активный проект
       document.querySelectorAll('.project').forEach(projectElement => {
         projectElement.classList.remove('active-project');
       });
       document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
 
-    function renderTasks(tasks) {
-      document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
-      tasks.forEach(task => {
-        const taskElement = createTaskElement(task.id, task.name, task.column, task.assignee);
-        document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
-      });
-    }
-
+    // Create task element
     function createTaskElement(taskId, taskName, column, assignee) {
       const taskElement = document.createElement('div');
       taskElement.className = 'task';
@@ -227,6 +416,7 @@
       return taskElement;
     }
 
+    // Delete task
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => {
@@ -234,17 +424,19 @@
         });
     }
 
+    // Assign task
     function assignTask(taskId) {
       const assignee = prompt('Введите имя исполнителя:');
       if (assignee) {
         firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
           assignee: assignee
         }).then(() => {
-          loadProjects();
+          loadProjects(); // To refresh the list
         });
       }
     }
 
+    // Add task
     document.querySelectorAll('.add-button').forEach(button => {
       button.addEventListener('click', () => {
         const taskInput = button.previousElementSibling;
@@ -256,9 +448,10 @@
             name: taskText,
             column: taskColumn
           }).then(docRef => {
+            // Создаем задачу сразу в интерфейсе
             const taskElement = createTaskElement(docRef.id, taskText, taskColumn, '');
             document.getElementById(taskColumn).querySelector('.tasks').appendChild(taskElement);
-            taskInput.value = '';
+            taskInput.value = ''; // Очищаем поле ввода
           });
         }
       });
