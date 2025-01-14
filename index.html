@@ -134,18 +134,6 @@
     .delete-task:hover {
       background: #c9302c;
     }
-    .assignee-button {
-      background: #5aac44;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 5px;
-      cursor: pointer;
-      margin-top: 5px;
-    }
-    .assignee-button:hover {
-      background: #519839;
-    }
     #logout-button {
       position: absolute;
       top: 20px;
@@ -171,6 +159,7 @@
 
   <div id="project-list">
     <button id="add-project-button">Добавить проект</button>
+    <button id="add-task-button">Добавить задачу</button>
   </div>
 
   <div id="board">
@@ -212,6 +201,7 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
+    const addTaskButton = document.getElementById('add-task-button');
 
     let activeProject = null;
 
@@ -255,7 +245,6 @@
 
     function loadProjects() {
       projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
-
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
       firestore.collection('projects').get()
@@ -310,16 +299,16 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
+            const taskElement = createTaskElement(doc.id, task.name, task.column);
             document.getElementById(task.column + '-tasks').appendChild(taskElement);
           });
         });
     }
 
-    function createTaskElement(taskId, taskText, column, assignee) {
+    function createTaskElement(taskId, taskText, column) {
       const task = document.createElement('div');
       task.className = 'task';
-      task.textContent = `${taskText} (Ответственный: ${assignee || 'Не назначен'})`;
+      task.textContent = taskText;
       task.draggable = true;
       task.setAttribute('data-task-id', taskId);
 
@@ -331,17 +320,11 @@
         e.target.style.background = '#ffffff';
       });
 
-      const assigneeButton = document.createElement('button');
-      assigneeButton.textContent = 'Назначить ответственного';
-      assigneeButton.classList.add('assignee-button');
-      assigneeButton.addEventListener('click', () => assignResponsible(taskId));
-
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Удалить';
       deleteButton.classList.add('delete-task');
       deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.appendChild(assigneeButton);
       task.appendChild(deleteButton);
       return task;
     }
@@ -351,13 +334,16 @@
         .then(() => openProject(activeProject));
     }
 
-    function assignResponsible(taskId) {
-      const assignee = prompt('Введите имя ответственного:');
-      if (assignee) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
-          .update({ assignee: assignee })
-          .then(() => openProject(activeProject));
-      }
+    addTaskButton.addEventListener('click', addTask);
+
+    function addTask() {
+      const taskName = prompt('Введите имя новой задачи:');
+      if (!taskName) return;
+
+      firestore.collection('projects').doc(activeProject).collection('tasks').add({
+        name: taskName,
+        column: 'todo',  // Задача по умолчанию будет добавлена в "To Do"
+      }).then(() => openProject(activeProject));
     }
 
     function allowDrop(event) {
@@ -368,7 +354,7 @@
       event.preventDefault();
       const taskId = event.dataTransfer.getData('taskId');
       const columnId = event.target.closest('.column').id;
-      
+
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
         .update({ column: columnId })
         .then(() => openProject(activeProject));
