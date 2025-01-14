@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
+  <!-- Подключение шрифта Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Arial', sans-serif;
+      font-family: 'Montserrat', sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f1f5f9;
@@ -83,6 +85,11 @@
     .project span {
       font-weight: bold;
       font-size: 18px;
+    }
+
+    .project.active {
+      background: #e0e0e0;
+      border-color: #005a8c;
     }
 
     .delete-project {
@@ -227,7 +234,7 @@
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button" id="add-todo">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
     </div>
     <div class="column" id="in-progress">
       <h3>In Progress</h3>
@@ -235,7 +242,7 @@
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button" id="add-in-progress">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
     </div>
     <div class="column" id="done">
       <h3>Done</h3>
@@ -243,7 +250,7 @@
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button" id="add-done">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
     </div>
   </div>
 
@@ -354,6 +361,16 @@
       board.style.display = 'flex';
       projectList.style.display = 'block';  // Сделать проектный список видимым
 
+      // Выделение активного проекта
+      const projectElements = document.querySelectorAll('.project');
+      projectElements.forEach(projectElement => {
+        projectElement.classList.remove('active');
+      });
+      const activeProjectElement = [...projectElements].find(projectElement => projectElement.innerHTML.includes(projectId));
+      if (activeProjectElement) {
+        activeProjectElement.classList.add('active');
+      }
+
       firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
           ['todo', 'in-progress', 'done'].forEach(status => {
@@ -364,7 +381,12 @@
                 const task = doc.data();
                 const taskElement = document.createElement('div');
                 taskElement.classList.add('task');
-                taskElement.innerHTML = `${task.name}<button class="delete-task" onclick="deleteTask('${doc.id}')">X</button>`;
+                taskElement.draggable = true;
+                taskElement.innerHTML = `
+                  <span>${task.name}</span>
+                  <button class="delete-task" onclick="deleteTask('${projectId}', '${doc.id}')">X</button>
+                `;
+                taskElement.addEventListener('dragstart', drag);
                 column.querySelector('.tasks').appendChild(taskElement);
               }
             });
@@ -372,40 +394,58 @@
         });
     }
 
-    // Delete project
-    function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects())
-        .catch(error => console.error('Ошибка удаления проекта:', error));
-    }
-
     // Delete task
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => openProject(activeProject))
+    function deleteTask(projectId, taskId) {
+      firestore.collection('projects').doc(projectId).collection('tasks').doc(taskId).delete()
+        .then(() => openProject(projectId))
         .catch(error => console.error('Ошибка удаления задачи:', error));
     }
 
     // Add task
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', (event) => {
-        const column = event.target.closest('.column');
-        const input = column.querySelector('.task-input');
-        const taskName = input.value.trim();
-        if (taskName) {
-          const status = column.id;
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskName,
-            status: status
-          })
-          .then(() => {
-            input.value = '';  // Очистить поле ввода
-            openProject(activeProject);  // Перезагрузить проект с новыми задачами
-          })
-          .catch(error => console.error('Ошибка добавления задачи:', error));
-        }
+    function addTask(status) {
+      const taskName = document.querySelector(`#${status} .task-input`).value.trim();
+      if (taskName && activeProject) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').add({
+          name: taskName,
+          status: status
+        })
+        .then(() => openProject(activeProject))
+        .catch(error => console.error('Ошибка добавления задачи:', error));
+      }
+    }
+
+    // Drag events
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    function drag(event) {
+      event.dataTransfer.setData('taskId', event.target.id);
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      const taskId = event.dataTransfer.getData('taskId');
+      const status = event.target.closest('.column').id;
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+        status: status
+      }).then(() => {
+        openProject(activeProject);
       });
-    });
+    }
+
+    // Handle task addition
+    document.getElementById('add-todo').addEventListener('click', () => addTask('todo'));
+    document.getElementById('add-in-progress').addEventListener('click', () => addTask('in-progress'));
+    document.getElementById('add-done').addEventListener('click', () => addTask('done'));
+
+    // Prevent reset after drag-and-drop
+    window.onload = () => {
+      document.querySelectorAll('.tasks').forEach(container => {
+        container.ondrop = drop;
+        container.ondragover = allowDrop;
+      });
+    };
   </script>
 </body>
 </html>
