@@ -349,39 +349,18 @@
         updateTaskColumn(taskId, newColumn);
       });
 
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-task';
-      deleteButton.textContent = 'Удалить';
-      deleteButton.addEventListener('click', () => deleteTask(taskId));
+      // Если задача находится в столбце "Done", добавляем кнопку удаления
+      if (column === 'done') {
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-task';
+        deleteButton.textContent = 'Удалить';
+        deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.appendChild(deleteButton);
+        task.appendChild(deleteButton);
+      }
+
       return task;
     }
-
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', event => {
-        event.preventDefault();
-        const draggingTask = document.querySelector('.task.dragging');
-        container.appendChild(draggingTask);
-      });
-    });
-
-    document.querySelectorAll('.add-button').forEach((button, index) => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        if (taskText && activeProject) {
-          const columnId = ['todo', 'in-progress', 'done'][index];
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: columnId
-          }).then(() => {
-            taskInput.value = '';
-            openProject(activeProject);
-          });
-        }
-      });
-    });
 
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
