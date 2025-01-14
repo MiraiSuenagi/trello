@@ -338,26 +338,23 @@
     }
 
     // Add project with unique name check
-    // Add project with unique name check
-function addProject() {
-  const projectName = prompt('Введите название проекта:');
-  if (projectName) {
-    firestore.collection('projects').where('name', '==', projectName).get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          firestore.collection('projects').add({
-            name: projectName
-          }).then(docRef => {
-            loadProjects(); // Обновляем список проектов
-            openProject(docRef.id); // Открываем только что добавленный проект
+    function addProject() {
+      const projectName = prompt('Введите название проекта:');
+      if (projectName) {
+        firestore.collection('projects').where('name', '==', projectName).get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              firestore.collection('projects').add({
+                name: projectName
+              }).then(() => {
+                loadProjects();
+              });
+            } else {
+              alert('Проект с таким названием уже существует');
+            }
           });
-        } else {
-          alert('Проект с таким названием уже существует');
-        }
-      });
-  }
-}
-
+      }
+    }
 
     // Delete project
     function deleteProject(projectId) {
