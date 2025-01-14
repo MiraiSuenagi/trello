@@ -92,111 +92,42 @@
     #add-project-button:hover {
       background: #519839;
     }
-    #board {
+    #add-project-modal {
       display: none;
-      gap: 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #add-project-modal .modal-content {
+      background: white;
       padding: 20px;
-      max-width: 1200px;
-      width: 100%;
-      margin-left: 320px; /* Сдвигаем доску вправо */
-    }
-    .column {
-      background: #ebecf0;
       border-radius: 8px;
-      padding: 10px;
       width: 300px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    .column h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      color: #333;
       text-align: center;
     }
-    .tasks {
-      flex-grow: 1;
-      padding: 10px;
-      background: #f4f5f7;
-      border-radius: 6px;
-      min-height: 300px;
-      overflow-y: auto;
-    }
-    .task {
-      background: #ffffff;
-      border-radius: 6px;
+    #add-project-modal input {
+      width: 100%;
       padding: 10px;
       margin-bottom: 10px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      cursor: grab;
-      transition: background 0.2s;
-    }
-    .task:hover {
-      background: #f0f8ff;
-    }
-    .delete-task {
-      background: #d9534f;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-left: 10px;
-      margin-top: 5px;
-    }
-    .delete-task:hover {
-      background: #c9302c;
-    }
-    .add-task-container {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .task-input {
-      flex: 1;
-      padding: 8px;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 5px;
     }
-    .add-button {
-      padding: 8px 12px;
-      background: #5aac44;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .add-button:hover {
-      background: #519839;
-    }
-    #logout-button {
-      position: absolute;
-      top: 20px;
-      right: 20px;
+    #add-project-modal button {
       padding: 10px 20px;
-      background: #d9534f;
+      background: #0079bf;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    #logout-button:hover {
-      background: #c9302c;
-    }
-    .active-project {
-      background: #cce5ff;
-    }
-    .assign-button {
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-    }
-    .assign-button:hover {
-      background: #0056b3;
+    #add-project-modal button:hover {
+      background: #005a8c;
     }
   </style>
 </head>
@@ -209,6 +140,16 @@
 
   <div id="project-list">
     <button id="add-project-button">+</button>
+  </div>
+
+  <!-- Add Project Modal -->
+  <div id="add-project-modal">
+    <div class="modal-content">
+      <h3>Создать новый проект</h3>
+      <input type="text" id="new-project-name" placeholder="Название проекта">
+      <button id="create-project-button">Создать</button>
+      <button id="close-modal-button">Закрыть</button>
+    </div>
   </div>
 
   <div id="board">
@@ -263,6 +204,11 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
+    const addProjectButton = document.getElementById('add-project-button');
+    const addProjectModal = document.getElementById('add-project-modal');
+    const createProjectButton = document.getElementById('create-project-button');
+    const closeModalButton = document.getElementById('close-modal-button');
+    const newProjectNameInput = document.getElementById('new-project-name');
 
     let activeProject = null;
 
@@ -292,6 +238,33 @@
     // Logout
     logoutButton.addEventListener('click', () => {
       auth.signOut();
+    });
+
+    // Show Add Project Modal
+    addProjectButton.addEventListener('click', () => {
+      addProjectModal.style.display = 'flex';
+    });
+
+    // Close Add Project Modal
+    closeModalButton.addEventListener('click', () => {
+      addProjectModal.style.display = 'none';
+    });
+
+    // Create New Project
+    createProjectButton.addEventListener('click', () => {
+      const projectName = newProjectNameInput.value.trim();
+      if (projectName) {
+        firestore.collection('projects').add({
+          name: projectName,
+        }).then(() => {
+          addProjectModal.style.display = 'none';
+          loadProjects();
+        }).catch(error => {
+          console.error("Ошибка при создании проекта:", error);
+        });
+      } else {
+        alert("Введите название проекта.");
+      }
     });
 
     // Load projects
@@ -375,52 +348,6 @@
       task.appendChild(deleteButton);
       task.appendChild(assignButton);
       return task;
-    }
-
-    // Add new task
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        
-        if (taskText && activeProject) {
-          const taskColumn = button.closest('.column').id;
-          
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: taskColumn
-          }).then(docRef => {
-            const newTaskElement = createTaskElement(docRef.id, taskText, taskColumn, null);
-            document.getElementById(taskColumn).querySelector('.tasks').appendChild(newTaskElement);
-            taskInput.value = '';
-          }).catch(error => {
-            console.error("Ошибка при добавлении задачи:", error);
-            alert("Не удалось добавить задачу");
-          });
-        }
-      });
-    });
-
-    // Assign task
-    function assignTask(taskId) {
-      const assignee = prompt('Введите email исполнителя:');
-      if (assignee) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ assignee: assignee });
-      }
-    }
-
-    // Update task column
-    function updateTaskColumn(taskId, newColumn) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column: newColumn });
-    }
-
-    // Delete task
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => {
-          const taskElement = document.querySelector(`[data-id="${taskId}"]`);
-          if (taskElement) taskElement.remove();
-        });
     }
 
     // Delete project
