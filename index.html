@@ -118,7 +118,8 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      height: 100%;
+      height: 500px; /* Ограничиваем высоту */
+      overflow-y: auto; /* Добавляем прокрутку */
     }
 
     .column h3 {
@@ -224,7 +225,7 @@
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-button" id="add-todo">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -232,7 +233,7 @@
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-button" id="add-in-progress">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -240,7 +241,7 @@
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-button" id="add-done">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -271,7 +272,6 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
-
     let activeProject = null;
 
     // Check auth state
@@ -385,6 +385,27 @@
         .then(() => openProject(activeProject))
         .catch(error => console.error('Ошибка удаления задачи:', error));
     }
+
+    // Add task
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', (event) => {
+        const column = event.target.closest('.column');
+        const input = column.querySelector('.task-input');
+        const taskName = input.value.trim();
+        if (taskName) {
+          const status = column.id;
+          firestore.collection('projects').doc(activeProject).collection('tasks').add({
+            name: taskName,
+            status: status
+          })
+          .then(() => {
+            input.value = '';  // Очистить поле ввода
+            openProject(activeProject);  // Перезагрузить проект с новыми задачами
+          })
+          .catch(error => console.error('Ошибка добавления задачи:', error));
+        }
+      });
+    });
   </script>
 </body>
 </html>
