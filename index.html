@@ -381,22 +381,30 @@
       }).then(() => openProject(activeProject));
     }
 
-    // Add task to a column
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', (event) => {
-        const input = event.target.previousElementSibling;
-        const taskText = input.value.trim();
-        if (!taskText) return;
+    
+// Add task to a column
+document.querySelectorAll('.add-button').forEach(button => {
+  button.addEventListener('click', (event) => {
+    const input = event.target.previousElementSibling;
+    const taskText = input.value.trim();
+    if (!taskText) return;
 
-        const column = event.target.closest('.column').id;
-        firestore.collection('projects').doc(activeProject).collection('tasks').add({
-          name: taskText,
-          column: column
-        }).then(() => openProject(activeProject));
+    const column = event.target.closest('.column');
+    
+    // Проверка наличия элемента column
+    if (!column) return;
 
-        input.value = '';
-      });
-    });
+    const columnId = column.id;
+
+    firestore.collection('projects').doc(activeProject).collection('tasks').add({
+      name: taskText,
+      column: columnId
+    }).then(() => openProject(activeProject));
+
+    input.value = '';
+  });
+});
+
 
     // Enable dragging and dropping tasks between columns
     document.querySelectorAll('.column').forEach(column => {
