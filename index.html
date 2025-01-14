@@ -151,7 +151,7 @@
     // Загрузка проектов
     function loadProjects() {
       const projectContainer = document.getElementById('projects');
-      projectContainer.innerHTML = ''; // Очищаем контейнер перед загрузкой новых проектов
+      projectContainer.innerHTML = '';
 
       firestore.collection('projects').get()
         .then(snapshot => {
@@ -172,7 +172,7 @@
       if (!projectName) return;
 
       firestore.collection('projects').add({ name: projectName })
-        .then(() => loadProjects()); // Перезагружаем проекты после добавления
+        .then(() => loadProjects());
     });
 
     // Открытие проекта
@@ -186,7 +186,7 @@
       // Загрузка задач
       firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(column => column.innerHTML = ''); // Очищаем задачи перед загрузкой
+          document.querySelectorAll('.tasks').forEach(column => column.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
             const taskDiv = document.createElement('div');
