@@ -98,7 +98,7 @@
       padding: 20px;
       max-width: 1200px;
       width: 100%;
-      margin-left: 320px; /* Сдвигаем доску вправо */
+      margin-left: 360px; /* увеличиваем сдвиг */
     }
     .column {
       background: #ebecf0;
@@ -319,6 +319,7 @@
             const project = doc.data();
             const projectElement = document.createElement('div');
             projectElement.className = 'project';
+            projectElement.setAttribute('data-id', doc.id);
 
             const projectName = document.createElement('span');
             projectName.textContent = project.name;
@@ -338,24 +339,33 @@
 
     // Add project with unique name check
     function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName) return;
-
-      firestore.collection('projects').where("name", "==", projectName).get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            firestore.collection('projects').add({ name: projectName })
-              .then(() => loadProjects());
-          } else {
-            alert("Проект с таким названием уже существует");
-          }
-        });
+      const projectName = prompt('Введите название проекта:');
+      if (projectName) {
+        firestore.collection('projects').where('name', '==', projectName).get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              firestore.collection('projects').add({
+                name: projectName
+              }).then(() => {
+                loadProjects();
+              });
+            } else {
+              alert('Проект с таким названием уже существует');
+            }
+          });
+      }
     }
 
     // Delete project
     function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects());
+      if (confirm('Вы уверены, что хотите удалить этот проект?')) {
+        firestore.collection('projects').doc(projectId).delete()
+          .then(() => {
+            loadProjects();
+            board.style.display = 'none';
+          })
+          .catch(error => console.error('Ошибка удаления проекта:', error));
+      }
     }
 
     // Open project
@@ -373,6 +383,7 @@
           });
         });
 
+      // Подсвечиваем активный проект
       document.querySelectorAll('.project').forEach(projectElement => {
         projectElement.classList.remove('active-project');
       });
@@ -380,21 +391,13 @@
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText, column, assignee) {
-      const task = document.createElement('div');
-      task.className = 'task';
-      task.textContent = `${taskText} - ${assignee ? assignee : 'Нет исполнителя'}`;
-      task.draggable = true;
+    function createTaskElement(taskId, taskName, column, assignee) {
+      const taskElement = document.createElement('div');
+      taskElement.className = 'task';
+      taskElement.setAttribute('data-id', taskId);
 
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
-
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        const newColumn = task.closest('.column').id;
-        updateTaskColumn(taskId, newColumn);
-      });
+      const taskText = document.createElement('span');
+      taskText.textContent = taskName;
 
       const deleteButton = document.createElement('button');
       deleteButton.className = 'delete-task';
@@ -403,30 +406,34 @@
 
       const assignButton = document.createElement('button');
       assignButton.className = 'assign-button';
-      assignButton.textContent = 'Назначить исполнителя';
+      assignButton.textContent = assignee || 'Назначить';
       assignButton.addEventListener('click', () => assignTask(taskId));
 
-      task.appendChild(deleteButton);
-      task.appendChild(assignButton);
-      return task;
-    }
+      taskElement.appendChild(taskText);
+      taskElement.appendChild(assignButton);
+      taskElement.appendChild(deleteButton);
 
-    // Assign task to user
-    function assignTask(taskId) {
-      const assignee = prompt('Введите email исполнителя:');
-      if (assignee) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ assignee: assignee });
-      }
-    }
-
-    // Update task column
-    function updateTaskColumn(taskId, newColumn) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column: newColumn });
+      return taskElement;
     }
 
     // Delete task
     function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete();
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
+        .then(() => {
+          document.querySelector(`[data-id="${taskId}"]`).remove();
+        });
+    }
+
+    // Assign task
+    function assignTask(taskId) {
+      const assignee = prompt('Введите имя исполнителя:');
+      if (assignee) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+          assignee: assignee
+        }).then(() => {
+          loadProjects(); // To refresh the list
+        });
+      }
     }
 
     // Add task
@@ -436,10 +443,16 @@
         const taskText = taskInput.value.trim();
         if (taskText && activeProject) {
           const taskColumn = button.closest('.column').id;
+
           firestore.collection('projects').doc(activeProject).collection('tasks').add({
             name: taskText,
             column: taskColumn
-          }).then(() => taskInput.value = '');
+          }).then(docRef => {
+            // Создаем задачу сразу в интерфейсе
+            const taskElement = createTaskElement(docRef.id, taskText, taskColumn, '');
+            document.getElementById(taskColumn).querySelector('.tasks').appendChild(taskElement);
+            taskInput.value = ''; // Очищаем поле ввода
+          });
         }
       });
     });
