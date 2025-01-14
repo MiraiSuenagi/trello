@@ -42,6 +42,7 @@
     }
     #project-list {
       display: none;
+      flex-direction: column;
       gap: 10px;
       margin: 20px;
     }
@@ -52,9 +53,24 @@
       border-radius: 5px;
       cursor: pointer;
       transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .project:hover {
       background: #005a8c;
+    }
+    .delete-project {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .delete-project:hover {
+      background: #c9302c;
     }
     #board {
       display: none;
@@ -94,9 +110,23 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       cursor: grab;
       transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .task:hover {
       background: #f0f8ff;
+    }
+    .delete-task {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .delete-task:hover {
+      background: #c9302c;
     }
     .add-task-container {
       display: flex;
@@ -132,7 +162,9 @@
     <button id="login-button">Войти</button>
   </div>
 
-  <div id="project-list"></div>
+  <div id="project-list">
+    <button id="add-project-button">Добавить проект</button>
+  </div>
 
   <div id="board">
     <div class="column" id="todo">
@@ -202,7 +234,9 @@
 
     // Load projects
     function loadProjects() {
-      projectList.innerHTML = '';
+      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+
+      document.getElementById('add-project-button').addEventListener('click', addProject);
 
       firestore.collection('projects').get()
         .then(snapshot => {
@@ -210,11 +244,36 @@
             const project = doc.data();
             const projectElement = document.createElement('div');
             projectElement.className = 'project';
-            projectElement.textContent = project.name;
-            projectElement.addEventListener('click', () => openProject(doc.id));
+
+            const projectName = document.createElement('span');
+            projectName.textContent = project.name;
+            projectName.addEventListener('click', () => openProject(doc.id));
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-project';
+            deleteButton.textContent = 'Удалить';
+            deleteButton.addEventListener('click', () => deleteProject(doc.id));
+
+            projectElement.appendChild(projectName);
+            projectElement.appendChild(deleteButton);
             projectList.appendChild(projectElement);
           });
         });
+    }
+
+    // Add project
+    function addProject() {
+      const projectName = prompt('Введите имя нового проекта:');
+      if (!projectName) return;
+
+      firestore.collection('projects').add({ name: projectName })
+        .then(() => loadProjects());
+    }
+
+    // Delete project
+    function deleteProject(projectId) {
+      firestore.collection('projects').doc(projectId).delete()
+        .then(() => loadProjects());
     }
 
     // Open project
@@ -227,56 +286,33 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(task.name);
+            const taskElement = createTaskElement(doc.id, task.name);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
     // Create task element
-    function createTaskElement(taskText) {
+    function createTaskElement(taskId, taskText) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
-      task.draggable = true;
 
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-task';
+      deleteButton.textContent = 'Удалить';
+      deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        saveTaskPositions();
-      });
-
+      task.appendChild(deleteButton);
       return task;
     }
 
-    // Drag and Drop functionality
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', e => {
-        e.preventDefault();
-        const draggingTask = document.querySelector('.dragging');
-        container.appendChild(draggingTask);
-      });
-    });
-
-    // Save task positions to Firestore
-    function saveTaskPositions() {
+    // Delete task
+    function deleteTask(taskId) {
       if (!activeProject) return;
-      const tasks = {};
 
-      document.querySelectorAll('.column').forEach(column => {
-        const columnId = column.id;
-        tasks[columnId] = Array.from(column.querySelectorAll('.task')).map(task => task.textContent);
-      });
-
-      const projectRef = firestore.collection('projects').doc(activeProject);
-      Object.entries(tasks).forEach(([column, taskArray]) => {
-        taskArray.forEach(taskName => {
-          projectRef.collection('tasks').doc(taskName).set({ name: taskName, column });
-        });
-      });
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
+        .then(() => openProject(activeProject));
     }
 
     // Add new task
@@ -289,14 +325,12 @@
         const columnId = button.closest('.column').id;
         const projectRef = firestore.collection('projects').doc(activeProject);
 
-        projectRef.collection('tasks').doc(taskText).set({ name: taskText, column: columnId })
-          .then(() => {
-            const taskElement = createTaskElement(taskText);
-            button.closest('.column').querySelector('.tasks').appendChild(taskElement);
-            input.value = '';
-          });
+        projectRef.collection('tasks').add({ name: taskText, column: columnId })
+          .then(() => openProject(activeProject));
       });
     });
+
+    loadProjects();
   </script>
 </body>
 </html>
