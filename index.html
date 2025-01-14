@@ -139,7 +139,7 @@
       gap: 10px;
       margin-bottom: 10px;
     }
-    .task-input {
+    .task-input, .assignee-input {
       flex: 1;
       padding: 8px;
       border: 1px solid #ccc;
@@ -188,6 +188,7 @@
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks" id="todo-tasks"></div>
@@ -196,6 +197,7 @@
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks" id="in-progress-tasks"></div>
@@ -204,6 +206,7 @@
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks" id="done-tasks"></div>
@@ -332,16 +335,16 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column);
+            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
             document.getElementById(task.column + '-tasks').appendChild(taskElement);
           });
         });
     }
 
-    function createTaskElement(taskId, taskText, column) {
+    function createTaskElement(taskId, taskText, column, assignee) {
       const task = document.createElement('div');
       task.className = 'task';
-      task.textContent = taskText;
+      task.textContent = `${taskText} (Ответственный: ${assignee})`;
       task.draggable = true;
       task.setAttribute('data-task-id', taskId);
 
@@ -365,6 +368,37 @@
       return task;
     }
 
+    function addTask(column) {
+      const taskInput = document.querySelector(`#${column} .task-input`);
+      const assigneeInput = document.querySelector(`#${column} .assignee-input`);
+
+      const taskName = taskInput.value.trim();
+      const assigneeName = assigneeInput.value.trim();
+
+      if (taskName && assigneeName) {
+        const task = {
+          name: taskName,
+          column: column,
+          assignee: assigneeName
+        };
+
+        firestore.collection('projects').doc(activeProject).collection('tasks').add(task)
+          .then(() => openProject(activeProject));
+
+        taskInput.value = '';
+        assigneeInput.value = '';
+      } else {
+        alert('Введите название задачи и ФИО ответственного');
+      }
+    }
+
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', (event) => {
+        const columnId = event.target.closest('.column').id;
+        addTask(columnId);
+      });
+    });
+
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
@@ -377,20 +411,10 @@
     function drop(event) {
       event.preventDefault();
       const taskId = event.dataTransfer.getData('taskId');
-      const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-      const newColumn = event.target.closest('.column').id;
+      const columnId = event.target.closest('.column').id;
 
-      if (newColumn && taskElement) {
-        const currentColumn = taskElement.closest('.column').id;
-        if (newColumn !== currentColumn) {
-          updateTaskColumn(taskId, newColumn);
-        }
-      }
-    }
-
-    function updateTaskColumn(taskId, column) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column
+        column: columnId
       }).then(() => openProject(activeProject));
     }
   </script>
