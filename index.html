@@ -173,7 +173,7 @@
   </style>
 </head>
 <body>
-  <div id="auth-container">
+ <div id="auth-container">
     <input type="email" id="email" placeholder="Введите email">
     <input type="password" id="password" placeholder="Введите пароль">
     <button id="login-button">Войти</button>
@@ -186,29 +186,14 @@
   <div id="board">
     <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
-        <button class="add-button">Добавить</button>
-      </div>
       <div class="tasks" id="todo-tasks"></div>
     </div>
     <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
-        <button class="add-button">Добавить</button>
-      </div>
       <div class="tasks" id="in-progress-tasks"></div>
     </div>
     <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="text" class="assignee-input" placeholder="Ответственный (ФИО)">
-        <button class="add-button">Добавить</button>
-      </div>
       <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
@@ -344,7 +329,7 @@
     function createTaskElement(taskId, taskText, column, assignee) {
       const task = document.createElement('div');
       task.className = 'task';
-      task.textContent = `${taskText} (Ответственный: ${assignee})`;
+      task.textContent = `${taskText} (Ответственный: ${assignee || 'Не назначен'})`;
       task.draggable = true;
       task.setAttribute('data-task-id', taskId);
 
@@ -355,6 +340,12 @@
       task.addEventListener('dragend', (e) => {
         e.target.style.background = '#ffffff';
       });
+
+      const editButton = document.createElement('button');
+      editButton.textContent = 'Редактировать';
+      editButton.addEventListener('click', () => editTaskAssignee(taskId));
+
+      task.appendChild(editButton);
 
       if (column === 'done') {
         const deleteButton = document.createElement('button');
@@ -398,6 +389,15 @@
         addTask(columnId);
       });
     });
+
+    function editTaskAssignee(taskId) {
+      const assigneeName = prompt('Введите ФИО ответственного:');
+      if (assigneeName) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+          assignee: assigneeName
+        }).then(() => openProject(activeProject));
+      }
+    }
 
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
