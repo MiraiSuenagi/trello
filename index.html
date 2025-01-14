@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
+    /* Стили для всего приложения */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -80,8 +81,6 @@
       padding: 20px;
       max-width: 1200px;
       width: 100%;
-      display: flex;
-      justify-content: space-between;
     }
     .column {
       background: #ebecf0;
@@ -105,9 +104,6 @@
       border-radius: 6px;
       min-height: 300px;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
     }
     .task {
       background: #ffffff;
@@ -117,7 +113,6 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       cursor: grab;
       transition: background 0.2s;
-      position: relative;
     }
     .task:hover {
       background: #f0f8ff;
@@ -171,68 +166,39 @@
     #logout-button:hover {
       background: #c9302c;
     }
-    #add-project-button {
-      padding: 10px 20px;
-      background: #5aac44;
-      color: #fff;
-      font-size: 24px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
-      width: 50px;
-      height: 50px;
-      text-align: center;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    #add-project-button:hover {
-      background: #519839;
-    }
-    /* Modal Styles */
-    .modal {
+    /* Модальное окно для ответственного */
+    #responsible-modal {
       display: none;
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
     }
-    .modal-content {
-      background-color: #fff;
+    #responsible-modal-content {
+      background: white;
       padding: 20px;
       border-radius: 8px;
-      width: 400px;
+      width: 300px;
     }
-    .modal-content input {
+    #responsible-modal input {
       width: 100%;
+      margin: 10px 0;
       padding: 10px;
-      margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    .modal-content button {
+    #responsible-modal button {
+      width: 100%;
       padding: 10px;
       background: #5aac44;
       color: #fff;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      width: 100%;
-    }
-    .modal-content button:hover {
-      background: #519839;
-    }
-    .responsible-initials {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      font-weight: bold;
-      font-size: 14px;
-      color: #0079bf;
     }
   </style>
 </head>
@@ -248,40 +214,43 @@
   </div>
 
   <div id="board">
-    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="todo">
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="todo-tasks"></div>
+      <div class="tasks"></div>
     </div>
-    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="in-progress">
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="in-progress-tasks"></div>
+      <div class="tasks"></div>
     </div>
-    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="done">
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="done-tasks"></div>
+      <div class="tasks"></div>
     </div>
   </div>
 
   <button id="logout-button">Выйти</button>
 
-  <!-- Modal for adding responsible -->
-  <div class="modal" id="responsible-modal">
-    <div class="modal-content">
-      <input type="text" id="responsible-name" placeholder="ФИО">
-      <input type="email" id="responsible-email" placeholder="Email">
-      <button id="save-responsible">Сохранить</button>
+  <!-- Модальное окно для ввода данных о ответственном -->
+  <div id="responsible-modal">
+    <div id="responsible-modal-content">
+      <label for="responsible-name">ФИО</label>
+      <input type="text" id="responsible-name" placeholder="Введите ФИО">
+      <label for="responsible-email">Email</label>
+      <input type="email" id="responsible-email" placeholder="Введите email">
+      <button id="save-responsible-button">Сохранить</button>
+      <button id="close-responsible-button">Закрыть</button>
     </div>
   </div>
 
@@ -300,181 +269,133 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const firestore = firebase.firestore();
-
-    const authContainer = document.getElementById('auth-container');
-    const projectList = document.getElementById('project-list');
-    const board = document.getElementById('board');
-    const logoutButton = document.getElementById('logout-button');
-    const responsibleModal = document.getElementById('responsible-modal');
-    const saveResponsibleButton = document.getElementById('save-responsible');
-    const responsibleNameInput = document.getElementById('responsible-name');
-    const responsibleEmailInput = document.getElementById('responsible-email');
+    const auth = firebase.auth();
+    let activeProject = null;
     let activeTaskId = null;
 
-    let activeProject = null;
+    // Примерная структура данных Firebase для проектов и задач
+    function loadTasks(projectId) {
+      firestore.collection('projects').doc(projectId).collection('tasks').get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            const task = doc.data();
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.setAttribute('data-task-id', doc.id);
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        authContainer.style.display = 'none';
-        projectList.style.display = 'flex';
-        loadProjects();
+            const taskName = document.createElement('span');
+            taskName.textContent = task.name;
+
+            const responsibleSpan = document.createElement('span');
+            responsibleSpan.className = 'responsible-initials';
+            if (task.responsible) {
+              responsibleSpan.textContent = task.responsible.initials;
+            }
+
+            taskElement.appendChild(taskName);
+            taskElement.appendChild(responsibleSpan);
+            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
+          });
+        });
+    }
+
+    // Открытие модального окна для ввода ответственного
+    function openResponsibleModal() {
+      const modal = document.getElementById('responsible-modal');
+      modal.style.display = 'block';
+    }
+
+    // Обработчик добавления данных ответственного
+    document.getElementById('save-responsible-button').addEventListener('click', () => {
+      const name = document.getElementById('responsible-name').value.trim();
+      const email = document.getElementById('responsible-email').value.trim();
+
+      if (name && email) {
+        const initials = name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
+
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(activeTaskId)
+          .update({ responsible: { name, email, initials } })
+          .then(() => {
+            document.getElementById('responsible-modal').style.display = 'none';
+
+            const taskElement = document.querySelector(`[data-task-id="${activeTaskId}"]`);
+            const responsibleSpan = taskElement.querySelector('.responsible-initials');
+            
+            if (responsibleSpan) {
+              responsibleSpan.textContent = initials;
+            } else {
+              const newResponsibleSpan = document.createElement('span');
+              newResponsibleSpan.className = 'responsible-initials';
+              newResponsibleSpan.textContent = initials;
+              taskElement.appendChild(newResponsibleSpan);
+            }
+          })
+          .catch(error => console.error('Ошибка при обновлении ответственного:', error));
       } else {
-        authContainer.style.display = 'flex';
-        projectList.style.display = 'none';
-        board.style.display = 'none';
+        alert('Пожалуйста, заполните все поля.');
       }
     });
 
-    document.getElementById('login-button').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+    // Закрытие модального окна
+    document.getElementById('close-responsible-button').addEventListener('click', () => {
+      document.getElementById('responsible-modal').style.display = 'none';
+    });
 
+    // Авторизация и показ интерфейса
+    document.getElementById('login-button').addEventListener('click', () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
       auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          authContainer.style.display = 'none';
-          projectList.style.display = 'flex';
+        .then(userCredential => {
           loadProjects();
         })
         .catch(error => {
-          console.error('Ошибка авторизации:', error);
-          alert('Неверный email или пароль');
+          alert('Ошибка входа: ' + error.message);
         });
     });
 
-    logoutButton.addEventListener('click', () => {
-      auth.signOut()
-        .then(() => {
-          authContainer.style.display = 'flex';
-          projectList.style.display = 'none';
-          board.style.display = 'none';
-        })
-        .catch(error => console.error('Ошибка выхода:', error));
-    });
-
-    saveResponsibleButton.addEventListener('click', () => {
-      const name = responsibleNameInput.value.trim();
-      const email = responsibleEmailInput.value.trim();
-
-      if (!name || !email) {
-        alert("Пожалуйста, заполните все поля.");
-        return;
-      }
-
-      const initials = name.split(' ').map(word => word.charAt(0).toUpperCase()).join('');
-
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(activeTaskId)
-        .update({ responsible: { name, email, initials } })
-        .then(() => {
-          document.querySelector(`[data-task-id="${activeTaskId}"] .responsible-initials`).textContent = initials;
-          responsibleModal.style.display = 'none';
-        });
-    });
-
+    // Загрузка проектов
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">+</button>';
-      document.getElementById('add-project-button').addEventListener('click', addProject);
-
       firestore.collection('projects').get()
         .then(snapshot => {
+          document.getElementById('project-list').style.display = 'flex';
           snapshot.forEach(doc => {
             const project = doc.data();
             const projectElement = document.createElement('div');
             projectElement.className = 'project';
+            projectElement.setAttribute('data-project-id', doc.id);
+            projectElement.textContent = project.name;
 
-            const projectName = document.createElement('span');
-            projectName.textContent = project.name;
-            projectName.addEventListener('click', () => openProject(doc.id));
+            projectElement.addEventListener('click', () => {
+              activeProject = doc.id;
+              loadTasks(doc.id);
+              document.getElementById('board').style.display = 'flex';
+            });
 
             const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-project';
             deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteProject(doc.id));
-
-            projectElement.appendChild(projectName);
-            projectElement.appendChild(deleteButton);
-            projectList.appendChild(projectElement);
-          });
-        });
-    }
-
-    function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName) return;
-
-      firestore.collection('projects').where("name", "==", projectName).get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            firestore.collection('projects').add({ name: projectName })
-              .then(() => loadProjects());
-          } else {
-            alert("Проект с таким названием уже существует");
-          }
-        });
-    }
-
-    function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects());
-    }
-
-    function openProject(projectId) {
-      activeProject = projectId;
-      board.style.display = 'flex';
-
-      firestore.collection('projects').doc(projectId).collection('tasks').get()
-        .then(snapshot => {
-          const taskColumns = { 'todo-tasks': 'todo', 'in-progress-tasks': 'in-progress', 'done-tasks': 'done' };
-
-          Object.keys(taskColumns).forEach(key => {
-            const column = document.getElementById(key);
-            column.innerHTML = '';
-
-            snapshot.forEach(doc => {
-              const task = doc.data();
-              if (task.status === taskColumns[key]) {
-                const taskElement = document.createElement('div');
-                taskElement.className = 'task';
-                taskElement.setAttribute('draggable', 'true');
-                taskElement.setAttribute('data-task-id', doc.id);
-                taskElement.addEventListener('click', () => openTask(doc.id));
-
-                const taskName = document.createElement('span');
-                taskName.textContent = task.name;
-
-                const responsibleSpan = document.createElement('span');
-                if (task.responsible) {
-                  responsibleSpan.className = 'responsible-initials';
-                  responsibleSpan.textContent = task.responsible.initials;
-                }
-
-                taskElement.appendChild(taskName);
-                taskElement.appendChild(responsibleSpan);
-                column.appendChild(taskElement);
-              }
+            deleteButton.className = 'delete-project';
+            deleteButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              firestore.collection('projects').doc(doc.id).delete();
+              loadProjects();  // Перезагрузить проекты
             });
+
+            projectElement.appendChild(deleteButton);
+            document.getElementById('project-list').appendChild(projectElement);
           });
         });
     }
 
-    function openTask(taskId) {
-      activeTaskId = taskId;
-      responsibleModal.style.display = 'flex';
-    }
-
-    function allowDrop(event) {
-      event.preventDefault();
-    }
-
-    function drop(event) {
-      event.preventDefault();
-      const taskId = event.dataTransfer.getData('taskId');
-      const newStatus = event.target.id;
-
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
-        .update({ status: newStatus });
-    }
+    // Выход
+    document.getElementById('logout-button').addEventListener('click', () => {
+      auth.signOut().then(() => {
+        document.getElementById('project-list').style.display = 'none';
+        document.getElementById('board').style.display = 'none';
+        document.getElementById('auth-container').style.display = 'flex';
+      });
+    });
   </script>
 </body>
 </html>
