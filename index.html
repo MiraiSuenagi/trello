@@ -42,15 +42,17 @@
     }
     #project-list {
       display: none;
-      flex-direction: column;
+      flex-direction: row;
+      flex-wrap: wrap;
       gap: 10px;
       margin: 20px;
     }
     .project {
-      background: #0079bf;
-      color: #fff;
+      background: #ffffff;
+      color: #333;
       padding: 10px 20px;
       border-radius: 5px;
+      border: 1px solid #ccc;
       cursor: pointer;
       transition: background 0.2s;
       display: flex;
@@ -58,7 +60,7 @@
       align-items: center;
     }
     .project:hover {
-      background: #005a8c;
+      background: #f0f0f0;
     }
     .delete-project {
       background: #d9534f;
@@ -127,6 +129,18 @@
     }
     .delete-task:hover {
       background: #c9302c;
+    }
+    .edit-task {
+      background: #5bc0de;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .edit-task:hover {
+      background: #31b0d5;
     }
     .add-task-container {
       display: flex;
@@ -286,25 +300,40 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name);
+            const taskElement = createTaskElement(doc.id, task.name, task.description);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText) {
+    function createTaskElement(taskId, taskText, taskDescription) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
+
+      const descriptionButton = document.createElement('button');
+      descriptionButton.className = 'edit-task';
+      descriptionButton.textContent = 'Описание';
+      descriptionButton.addEventListener('click', () => editTaskDescription(taskId, taskDescription));
 
       const deleteButton = document.createElement('button');
       deleteButton.className = 'delete-task';
       deleteButton.textContent = 'Удалить';
       deleteButton.addEventListener('click', () => deleteTask(taskId));
 
+      task.appendChild(descriptionButton);
       task.appendChild(deleteButton);
       return task;
+    }
+
+    // Edit task description
+    function editTaskDescription(taskId, currentDescription) {
+      const newDescription = prompt('Введите описание задачи:', currentDescription || '');
+      if (newDescription === null) return;
+
+      if (!activeProject) return;
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ description: newDescription });
     }
 
     // Delete task
@@ -325,7 +354,7 @@
         const columnId = button.closest('.column').id;
         const projectRef = firestore.collection('projects').doc(activeProject);
 
-        projectRef.collection('tasks').add({ name: taskText, column: columnId })
+        projectRef.collection('tasks').add({ name: taskText, column: columnId, description: '' })
           .then(() => openProject(activeProject));
       });
     });
