@@ -34,10 +34,10 @@
     <div id="user-list"></div>
   </div>
 
-  <!-- Подключение Firebase через CDN -->
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js"></script>
+  <!-- Подключение Firebase через CDN (compat-версии) -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
   <script>
     // Инициализация Firebase
@@ -52,7 +52,7 @@
     };
 
     // Инициализация приложения Firebase
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const firestore = firebase.firestore();
 
