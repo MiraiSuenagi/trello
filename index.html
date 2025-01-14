@@ -377,7 +377,7 @@
     function drop(event) {
       event.preventDefault();
       const taskId = event.dataTransfer.getData('taskId');
-      const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+      const taskElement = document.querySelector([data-task-id="${taskId}"]);
       const newColumn = event.target.closest('.column').id;
 
       if (newColumn && taskElement) {
