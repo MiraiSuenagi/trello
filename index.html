@@ -134,6 +134,28 @@
     .delete-task:hover {
       background: #c9302c;
     }
+    .add-task-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .task-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .add-button {
+      padding: 8px 12px;
+      background: #5aac44;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #519839;
+    }
     #logout-button {
       position: absolute;
       top: 20px;
@@ -151,7 +173,7 @@
   </style>
 </head>
 <body>
- <div id="auth-container">
+  <div id="auth-container">
     <input type="email" id="email" placeholder="Введите email">
     <input type="password" id="password" placeholder="Введите пароль">
     <button id="login-button">Войти</button>
@@ -159,20 +181,31 @@
 
   <div id="project-list">
     <button id="add-project-button">Добавить проект</button>
-    <button id="add-task-button">Добавить задачу</button>
   </div>
 
   <div id="board">
     <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks" id="todo-tasks"></div>
     </div>
     <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks" id="in-progress-tasks"></div>
     </div>
     <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
@@ -201,7 +234,6 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
-    const addTaskButton = document.getElementById('add-task-button');
 
     let activeProject = null;
 
@@ -245,6 +277,7 @@
 
     function loadProjects() {
       projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
       firestore.collection('projects').get()
@@ -320,30 +353,21 @@
         e.target.style.background = '#ffffff';
       });
 
-      const deleteButton = document.createElement('button');
-      deleteButton.textContent = 'Удалить';
-      deleteButton.classList.add('delete-task');
-      deleteButton.addEventListener('click', () => deleteTask(taskId));
+      if (column === 'done') {
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-task';
+        deleteButton.textContent = 'Удалить';
+        deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.appendChild(deleteButton);
+        task.appendChild(deleteButton);
+      }
+
       return task;
     }
 
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
-    }
-
-    addTaskButton.addEventListener('click', addTask);
-
-    function addTask() {
-      const taskName = prompt('Введите имя новой задачи:');
-      if (!taskName) return;
-
-      firestore.collection('projects').doc(activeProject).collection('tasks').add({
-        name: taskName,
-        column: 'todo',  // Задача по умолчанию будет добавлена в "To Do"
-      }).then(() => openProject(activeProject));
     }
 
     function allowDrop(event) {
@@ -353,11 +377,21 @@
     function drop(event) {
       event.preventDefault();
       const taskId = event.dataTransfer.getData('taskId');
-      const columnId = event.target.closest('.column').id;
+      const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+      const newColumn = event.target.closest('.column').id;
 
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
-        .update({ column: columnId })
-        .then(() => openProject(activeProject));
+      if (newColumn && taskElement) {
+        const currentColumn = taskElement.closest('.column').id;
+        if (newColumn !== currentColumn) {
+          updateTaskColumn(taskId, newColumn);
+        }
+      }
+    }
+
+    function updateTaskColumn(taskId, column) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+        column
+      }).then(() => openProject(activeProject));
     }
   </script>
 </body>
