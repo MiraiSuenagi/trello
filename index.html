@@ -42,28 +42,11 @@
     }
     #project-list {
       display: flex;
-      flex-direction: column; /* Проекты расположены по вертикали */
-      align-items: flex-start; /* Проекты слева */
+      flex-direction: column;
       gap: 10px;
-      margin-top: 20px;
-      padding-left: 20px; /* Отступ от левого края */
-    }
-    #add-project-button {
-      padding: 10px 20px;
-      background: #5aac44; /* Зеленый цвет */
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 20px; /* Размер шрифта */
-      width: 50px; /* Размер кнопки */
-      height: 50px; /* Размер кнопки */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    #add-project-button:hover {
-      background: #519839;
+      position: absolute;
+      top: 50px;
+      left: 20px;
     }
     .project {
       background: #ffffff;
@@ -76,7 +59,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      width: 300px; /* Ширина проектов */
     }
     .project:hover {
       background: #f0f0f0;
@@ -93,12 +75,30 @@
     .delete-project:hover {
       background: #c9302c;
     }
+    #add-project-button {
+      padding: 10px;
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    #add-project-button:hover {
+      background: #519839;
+    }
     #board {
       display: none;
       gap: 20px;
       padding: 20px;
       max-width: 1200px;
       width: 100%;
+      margin-left: 320px; /* Сдвигаем доску вправо */
     }
     .column {
       background: #ebecf0;
@@ -183,6 +183,20 @@
     }
     #logout-button:hover {
       background: #c9302c;
+    }
+    .active-project {
+      background: #cce5ff;
+    }
+    .assign-button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .assign-button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
@@ -303,90 +317,132 @@
         .then(snapshot => {
           snapshot.forEach(doc => {
             const project = doc.data();
-            const projectDiv = document.createElement('div');
-            projectDiv.classList.add('project');
-            projectDiv.textContent = project.name;
-            projectDiv.addEventListener('click', () => openProject(doc.id));
+            const projectElement = document.createElement('div');
+            projectElement.className = 'project';
+
+            const projectName = document.createElement('span');
+            projectName.textContent = project.name;
+            projectName.addEventListener('click', () => openProject(doc.id));
 
             const deleteButton = document.createElement('button');
-            deleteButton.classList.add('delete-project');
+            deleteButton.className = 'delete-project';
             deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', event => {
-              event.stopPropagation();
-              deleteProject(doc.id);
-            });
+            deleteButton.addEventListener('click', () => deleteProject(doc.id));
 
-            projectDiv.appendChild(deleteButton);
-            projectList.appendChild(projectDiv);
+            projectElement.appendChild(projectName);
+            projectElement.appendChild(deleteButton);
+            projectList.appendChild(projectElement);
           });
-        })
-        .catch(error => console.error('Ошибка загрузки проектов:', error));
+        });
     }
 
-    // Add new project
+    // Add project with unique name check
     function addProject() {
-      const projectName = prompt('Введите имя проекта');
-      if (projectName) {
-        firestore.collection('projects').add({ name: projectName })
-          .then(() => loadProjects())
-          .catch(error => console.error('Ошибка добавления проекта:', error));
-      }
+      const projectName = prompt('Введите имя нового проекта:');
+      if (!projectName) return;
+
+      firestore.collection('projects').where("name", "==", projectName).get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            firestore.collection('projects').add({ name: projectName })
+              .then(() => loadProjects());
+          } else {
+            alert("Проект с таким названием уже существует");
+          }
+        });
+    }
+
+    // Delete project
+    function deleteProject(projectId) {
+      firestore.collection('projects').doc(projectId).delete()
+        .then(() => loadProjects());
     }
 
     // Open project
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
-      loadTasks();
-    }
 
-    // Load tasks
-    function loadTasks() {
-      if (!activeProject) return;
-
-      firestore.collection('projects').doc(activeProject).collection('tasks').get()
+      firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
-          ['todo', 'in-progress', 'done'].forEach(status => {
-            const column = document.getElementById(status);
-            const tasksContainer = column.querySelector('.tasks');
-            tasksContainer.innerHTML = '';
-            snapshot.forEach(doc => {
-              const task = doc.data();
-              if (task.status === status) {
-                const taskDiv = document.createElement('div');
-                taskDiv.classList.add('task');
-                taskDiv.textContent = task.name;
-
-                const deleteButton = document.createElement('button');
-                deleteButton.classList.add('delete-task');
-                deleteButton.textContent = 'Удалить';
-                deleteButton.addEventListener('click', event => {
-                  event.stopPropagation();
-                  deleteTask(doc.id);
-                });
-
-                taskDiv.appendChild(deleteButton);
-                tasksContainer.appendChild(taskDiv);
-              }
-            });
+          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
+          snapshot.forEach(doc => {
+            const task = doc.data();
+            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
+            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
-        })
-        .catch(error => console.error('Ошибка загрузки задач:', error));
+        });
+
+      document.querySelectorAll('.project').forEach(projectElement => {
+        projectElement.classList.remove('active-project');
+      });
+      document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
 
-    // Delete project
-    function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects())
-        .catch(error => console.error('Ошибка удаления проекта:', error));
+    // Create task element
+    function createTaskElement(taskId, taskText, column, assignee) {
+      const task = document.createElement('div');
+      task.className = 'task';
+      task.textContent = `${taskText} - ${assignee ? assignee : 'Нет исполнителя'}`;
+      task.draggable = true;
+
+      task.addEventListener('dragstart', () => {
+        task.classList.add('dragging');
+      });
+
+      task.addEventListener('dragend', () => {
+        task.classList.remove('dragging');
+        const newColumn = task.closest('.column').id;
+        updateTaskColumn(taskId, newColumn);
+      });
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-task';
+      deleteButton.textContent = 'Удалить';
+      deleteButton.addEventListener('click', () => deleteTask(taskId));
+
+      const assignButton = document.createElement('button');
+      assignButton.className = 'assign-button';
+      assignButton.textContent = 'Назначить исполнителя';
+      assignButton.addEventListener('click', () => assignTask(taskId));
+
+      task.appendChild(deleteButton);
+      task.appendChild(assignButton);
+      return task;
+    }
+
+    // Assign task to user
+    function assignTask(taskId) {
+      const assignee = prompt('Введите email исполнителя:');
+      if (assignee) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ assignee: assignee });
+      }
+    }
+
+    // Update task column
+    function updateTaskColumn(taskId, newColumn) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column: newColumn });
     }
 
     // Delete task
     function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => loadTasks())
-        .catch(error => console.error('Ошибка удаления задачи:', error));
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete();
     }
+
+    // Add task
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const taskInput = button.previousElementSibling;
+        const taskText = taskInput.value.trim();
+        if (taskText && activeProject) {
+          const taskColumn = button.closest('.column').id;
+          firestore.collection('projects').doc(activeProject).collection('tasks').add({
+            name: taskText,
+            column: taskColumn
+          }).then(() => taskInput.value = '');
+        }
+      });
+    });
   </script>
 </body>
 </html>
