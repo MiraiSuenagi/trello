@@ -320,19 +320,21 @@
       });
     }
 
-    // Add project
-    addProjectButton.addEventListener('click', () => {
-      const projectName = prompt("Введите название нового проекта:");
-      if (projectName) {
-        firestore.collection('projects').add({
-          name: projectName
-        }).then(() => {
-          loadProjects();
-        }).catch(error => {
-          console.error("Ошибка при добавлении проекта:", error);
-        });
-      }
+   addProjectButton.addEventListener('click', function() {
+  console.log("Кнопка '+' нажата");  // Логирование для проверки
+  const projectName = prompt("Введите название нового проекта:");
+  if (projectName) {
+    firestore.collection('projects').add({
+      name: projectName
+    }).then(function() {
+      loadProjects();
+      console.log("Проект добавлен");  // Логирование после добавления
+    }).catch(function(error) {
+      console.error("Ошибка при добавлении проекта:", error);
     });
+  }
+});
+
 
     // Open project
     function openProject(projectId) {
