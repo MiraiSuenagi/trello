@@ -15,28 +15,43 @@
       align-items: center;
       min-height: 100vh;
     }
-    #auth-container, #project-list, #board {
-      width: 90%;
-      max-width: 1200px;
-      margin-top: 20px;
+    #auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
     }
-    #auth-container input, #auth-container button {
+    #auth-container input {
       margin: 5px 0;
       padding: 10px;
-      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 300px;
+    }
+    #auth-container button {
+      padding: 10px 20px;
+      background: #0079bf;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #auth-container button:hover {
+      background: #005a8c;
     }
     #project-list {
       display: none;
-      flex-wrap: wrap;
       gap: 10px;
+      margin: 20px;
     }
     .project {
       background: #0079bf;
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background 0.2s;
     }
     .project:hover {
       background: #005a8c;
@@ -44,165 +59,189 @@
     #board {
       display: none;
       gap: 20px;
-      flex-wrap: wrap;
+      padding: 20px;
+      max-width: 1200px;
+      width: 100%;
     }
     .column {
       background: #ebecf0;
-      width: 300px;
       border-radius: 8px;
       padding: 10px;
+      width: 300px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
     }
     .column h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #333;
       text-align: center;
     }
     .tasks {
-      min-height: 300px;
-      background: #f4f5f7;
+      flex-grow: 1;
       padding: 10px;
-      border-radius: 8px;
+      background: #f4f5f7;
+      border-radius: 6px;
+      min-height: 300px;
       overflow-y: auto;
     }
     .task {
-      background: white;
+      background: #ffffff;
+      border-radius: 6px;
       padding: 10px;
       margin-bottom: 10px;
-      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       cursor: grab;
+      transition: background 0.2s;
     }
-    .task:active {
-      cursor: grabbing;
+    .task:hover {
+      background: #f0f8ff;
+    }
+    .add-task-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .task-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .add-button {
+      padding: 8px 12px;
+      background: #5aac44;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #519839;
     }
   </style>
 </head>
 <body>
-  <!-- Авторизация -->
   <div id="auth-container">
-    <h2>Авторизация</h2>
     <input type="email" id="email" placeholder="Введите email">
     <input type="password" id="password" placeholder="Введите пароль">
     <button id="login-button">Войти</button>
   </div>
 
-  <!-- Список проектов -->
-  <div id="project-list">
-    <h2>Ваши проекты</h2>
-    <div id="projects"></div>
-    <button id="add-project-button">Добавить проект</button>
-  </div>
+  <div id="project-list"></div>
 
-  <!-- Доска задач -->
   <div id="board">
-    <h2 id="project-name"></h2>
     <div class="column" id="todo">
       <h3>To Do</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks"></div>
     </div>
-    <div class="column" id="doing">
-      <h3>Doing</h3>
+    <div class="column" id="in-progress">
+      <h3>In Progress</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks"></div>
     </div>
     <div class="column" id="done">
       <h3>Done</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
       <div class="tasks"></div>
     </div>
-    <button id="back-button">Назад к проектам</button>
   </div>
 
-  <!-- Подключение Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // Конфигурация Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
-      authDomain: "trellokz123.firebaseapp.com",
-      projectId: "trellokz123",
-      storageBucket: "trellokz123.appspot.com",
-      messagingSenderId: "902282094089",
-      appId: "1:902282094089:web:20f3874fd2393aa42f3ad8",
-      measurementId: "G-7HPT7Q512K"
-    };
+    const authContainer = document.getElementById('auth-container');
+    const projectList = document.getElementById('project-list');
+    const board = document.getElementById('board');
 
-    // Инициализация Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const firestore = firebase.firestore();
+    let projects = JSON.parse(localStorage.getItem('projects')) || {};
+    let activeProject = null;
 
-    // Авторизация
+    function updateProjectList() {
+      projectList.innerHTML = '';
+      for (const projectName in projects) {
+        const project = document.createElement('div');
+        project.className = 'project';
+        project.textContent = projectName;
+        project.addEventListener('click', () => loadProject(projectName));
+        projectList.appendChild(project);
+      }
+      const addProjectButton = document.createElement('div');
+      addProjectButton.className = 'project';
+      addProjectButton.textContent = '+';
+      addProjectButton.addEventListener('click', addProject);
+      projectList.appendChild(addProjectButton);
+    }
+
+    function addProject() {
+      const projectName = prompt('Введите имя нового проекта:');
+      if (!projectName || projects[projectName]) return;
+      projects[projectName] = { todo: [], 'in-progress': [], done: [] };
+      saveProjects();
+      updateProjectList();
+    }
+
+    function loadProject(projectName) {
+      activeProject = projectName;
+      board.style.display = 'flex';
+      for (const column in projects[projectName]) {
+        const tasksContainer = document.getElementById(column).querySelector('.tasks');
+        tasksContainer.innerHTML = '';
+        projects[projectName][column].forEach(task => {
+          const taskElement = createTaskElement(task);
+          tasksContainer.appendChild(taskElement);
+        });
+      }
+    }
+
+    function createTaskElement(taskText) {
+      const task = document.createElement('div');
+      task.className = 'task';
+      task.textContent = taskText;
+      task.draggable = true;
+      return task;
+    }
+
+    function saveProjects() {
+      localStorage.setItem('projects', JSON.stringify(projects));
+    }
+
     document.getElementById('login-button').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          document.getElementById('auth-container').style.display = 'none';
-          document.getElementById('project-list').style.display = 'block';
-          loadProjects();
-        })
-        .catch(error => {
-          console.error("Ошибка авторизации:", error);
-          alert("Неверный email или пароль");
-        });
+      if (email === 'admin@example.com' && password === 'admin123') {
+        authContainer.style.display = 'none';
+        projectList.style.display = 'flex';
+        updateProjectList();
+      } else {
+        alert('Неверный email или пароль');
+      }
     });
 
-    // Загрузка проектов
-    function loadProjects() {
-      const projectContainer = document.getElementById('projects');
-      projectContainer.innerHTML = '';
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const input = button.previousElementSibling;
+        const taskText = input.value;
+        if (!taskText || !activeProject) return;
 
-      firestore.collection('projects').get()
-        .then(snapshot => {
-          snapshot.forEach(doc => {
-            const project = doc.data();
-            const projectDiv = document.createElement('div');
-            projectDiv.className = 'project';
-            projectDiv.textContent = project.name;
-            projectDiv.addEventListener('click', () => openProject(doc.id));
-            projectContainer.appendChild(projectDiv);
-          });
-        });
-    }
-
-    // Добавление проекта
-    document.getElementById('add-project-button').addEventListener('click', () => {
-      const projectName = prompt('Введите название проекта:');
-      if (!projectName) return;
-
-      firestore.collection('projects').add({ name: projectName })
-        .then(() => loadProjects());
+        const columnId = button.closest('.column').id;
+        projects[activeProject][columnId].push(taskText);
+        saveProjects();
+        loadProject(activeProject);
+      });
     });
 
-    // Открытие проекта
-    function openProject(projectId) {
-      document.getElementById('project-list').style.display = 'none';
-      document.getElementById('board').style.display = 'flex';
-
-      const projectNameElement = document.getElementById('project-name');
-      projectNameElement.textContent = projectId; // Имя проекта, измените на нужное
-
-      // Загрузка задач
-      firestore.collection('projects').doc(projectId).collection('tasks').get()
-        .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(column => column.innerHTML = '');
-          snapshot.forEach(doc => {
-            const task = doc.data();
-            const taskDiv = document.createElement('div');
-            taskDiv.className = 'task';
-            taskDiv.textContent = task.name;
-
-            document.getElementById(task.column).querySelector('.tasks').appendChild(taskDiv);
-          });
-        });
-    }
-
-    // Вернуться к списку проектов
-    document.getElementById('back-button').addEventListener('click', () => {
-      document.getElementById('board').style.display = 'none';
-      document.getElementById('project-list').style.display = 'block';
-    });
+    updateProjectList();
   </script>
 </body>
 </html>
