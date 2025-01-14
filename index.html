@@ -123,6 +123,7 @@
       border-radius: 5px;
       padding: 5px;
       cursor: pointer;
+      margin-left: 10px;
     }
     .delete-task:hover {
       background: #c9302c;
@@ -148,6 +149,20 @@
     }
     .add-button:hover {
       background: #519839;
+    }
+    #logout-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #logout-button:hover {
+      background: #d32f2f;
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -192,6 +207,8 @@
     </div>
   </div>
 
+  <button id="logout-button" style="display: none;">Выйти</button>
+
   <script>
     // Firebase configuration
     const firebaseConfig = {
@@ -211,7 +228,7 @@
     const authContainer = document.getElementById('auth-container');
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
-
+    const logoutButton = document.getElementById('logout-button');
     let activeProject = null;
 
     // Check auth state
@@ -219,11 +236,13 @@
       if (user) {
         authContainer.style.display = 'none';
         projectList.style.display = 'flex';
+        logoutButton.style.display = 'inline-block';
         loadProjects();
       } else {
         authContainer.style.display = 'flex';
         projectList.style.display = 'none';
         board.style.display = 'none';
+        logoutButton.style.display = 'none';
       }
     });
 
@@ -242,6 +261,16 @@
           console.error('Ошибка авторизации:', error);
           alert('Неверный email или пароль');
         });
+    });
+
+    // Logout
+    logoutButton.addEventListener('click', () => {
+      auth.signOut().then(() => {
+        authContainer.style.display = 'flex';
+        projectList.style.display = 'none';
+        board.style.display = 'none';
+        logoutButton.style.display = 'none';
+      });
     });
 
     // Load projects
@@ -264,7 +293,10 @@
             const deleteButton = document.createElement('button');
             deleteButton.className = 'delete-project';
             deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteProject(doc.id));
+            deleteButton.addEventListener('click', (e) => {
+              e.stopPropagation(); // Prevent opening the project
+              deleteProject(doc.id);
+            });
 
             projectElement.appendChild(projectName);
             projectElement.appendChild(deleteButton);
@@ -278,8 +310,15 @@
       const projectName = prompt('Введите имя нового проекта:');
       if (!projectName) return;
 
-      firestore.collection('projects').add({ name: projectName })
-        .then(() => loadProjects());
+      firestore.collection('projects').where('name', '==', projectName).get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            firestore.collection('projects').add({ name: projectName })
+              .then(() => loadProjects());
+          } else {
+            alert('Проект с таким именем уже существует.');
+          }
+        });
     }
 
     // Delete project
