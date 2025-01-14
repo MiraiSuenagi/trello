@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f4f5f7;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
       min-height: 100vh;
     }
     #auth-container {
@@ -41,10 +41,11 @@
       background: #005a8c;
     }
     #project-list {
-      display: flex;
-      flex-direction: column; /* Changed to vertical layout */
-      align-items: flex-start; /* Left align the projects */
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
       margin-top: 20px;
+      margin-left: 20px;
     }
     .project {
       background: #ffffff;
@@ -76,10 +77,12 @@
     }
     #board {
       display: none;
+      flex-direction: row;
       gap: 20px;
       padding: 20px;
       max-width: 1200px;
       width: 100%;
+      margin-left: 20px;
     }
     .column {
       background: #ebecf0;
@@ -140,12 +143,6 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    .responsible-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
     .add-button {
       padding: 8px 12px;
       background: #5aac44;
@@ -172,18 +169,17 @@
       background: #c9302c;
     }
     #add-project-button {
-      background: #5aac44; /* Green color */
-      color: white;
+      background: #5aac44;
+      color: #fff;
       border: none;
       border-radius: 50%;
+      font-size: 20px;
       width: 40px;
       height: 40px;
-      font-size: 24px;
-      cursor: pointer;
       display: flex;
-      justify-content: center;
       align-items: center;
-      margin-top: 10px;
+      justify-content: center;
+      cursor: pointer;
     }
     #add-project-button:hover {
       background: #519839;
@@ -206,7 +202,6 @@
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -215,7 +210,6 @@
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -224,7 +218,6 @@
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -361,17 +354,22 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column);
+            const taskElement = createTaskElement(doc.id, task.name, task.column, task.responsible);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText, column) {
+    function createTaskElement(taskId, taskText, column, responsible) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
+
+      const responsibleElement = document.createElement('span');
+      responsibleElement.textContent = `Ответственный: ${responsible}`;
+      task.appendChild(responsibleElement);
+
       task.draggable = true;
 
       task.addEventListener('dragstart', () => {
@@ -393,30 +391,19 @@
       return task;
     }
 
-    // Drag and Drop functionality
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', event => {
-        event.preventDefault();
-        const draggingTask = document.querySelector('.task.dragging');
-        container.appendChild(draggingTask);
-      });
-    });
-
     // Add task
     document.querySelectorAll('.add-button').forEach((button, index) => {
       button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling.previousElementSibling;
-        const responsibleInput = button.previousElementSibling;
+        const taskInput = button.previousElementSibling;
         const taskText = taskInput.value.trim();
-        const responsibleEmail = responsibleInput.value.trim();
-        if (taskText && responsibleEmail && activeProject) {
+        const responsibleEmail = prompt("Введите email ответственного:");
+        if (taskText && activeProject) {
           firestore.collection('projects').doc(activeProject).collection('tasks').add({
             name: taskText,
             column: ['todo', 'in-progress', 'done'][index],
             responsible: responsibleEmail
           }).then(() => {
             taskInput.value = '';
-            responsibleInput.value = '';
             openProject(activeProject);
           });
         }
