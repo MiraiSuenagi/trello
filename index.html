@@ -134,26 +134,16 @@
     .delete-task:hover {
       background: #c9302c;
     }
-    .add-task-container {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .task-input, .assignee-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .add-button {
-      padding: 8px 12px;
+    .assignee-button {
       background: #5aac44;
-      color: #fff;
+      color: white;
       border: none;
       border-radius: 4px;
+      padding: 5px;
       cursor: pointer;
+      margin-top: 5px;
     }
-    .add-button:hover {
+    .assignee-button:hover {
       background: #519839;
     }
     #logout-button {
@@ -186,29 +176,14 @@
   <div id="board">
     <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Введите задачу">
-        <input type="text" class="assignee-input" placeholder="Введите ответственного">
-        <button class="add-button">Добавить задачу</button>
-      </div>
       <div class="tasks" id="todo-tasks"></div>
     </div>
     <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Введите задачу">
-        <input type="text" class="assignee-input" placeholder="Введите ответственного">
-        <button class="add-button">Добавить задачу</button>
-      </div>
       <div class="tasks" id="in-progress-tasks"></div>
     </div>
     <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Введите задачу">
-        <input type="text" class="assignee-input" placeholder="Введите ответственного">
-        <button class="add-button">Добавить задачу</button>
-      </div>
       <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
@@ -356,16 +331,17 @@
         e.target.style.background = '#ffffff';
       });
 
-      const editButton = document.createElement('button');
-      editButton.textContent = 'Редактировать';
-      editButton.addEventListener('click', () => editTask(taskId));
+      const assigneeButton = document.createElement('button');
+      assigneeButton.textContent = 'Назначить ответственного';
+      assigneeButton.classList.add('assignee-button');
+      assigneeButton.addEventListener('click', () => assignResponsible(taskId));
 
       const deleteButton = document.createElement('button');
       deleteButton.textContent = 'Удалить';
       deleteButton.classList.add('delete-task');
       deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.appendChild(editButton);
+      task.appendChild(assigneeButton);
       task.appendChild(deleteButton);
       return task;
     }
@@ -375,45 +351,14 @@
         .then(() => openProject(activeProject));
     }
 
-    function editTask(taskId) {
-      const newTaskName = prompt('Введите новое название задачи:');
-      if (newTaskName) {
+    function assignResponsible(taskId) {
+      const assignee = prompt('Введите имя ответственного:');
+      if (assignee) {
         firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
-          .update({ name: newTaskName })
+          .update({ assignee: assignee })
           .then(() => openProject(activeProject));
       }
     }
-
-    function addTask(column) {
-      const taskInput = document.querySelector(`#${column} .task-input`);
-      const assigneeInput = document.querySelector(`#${column} .assignee-input`);
-
-      const taskName = taskInput.value.trim();
-      const assigneeName = assigneeInput.value.trim();
-
-      if (taskName && assigneeName) {
-        const task = {
-          name: taskName,
-          column: column,
-          assignee: assigneeName
-        };
-
-        firestore.collection('projects').doc(activeProject).collection('tasks').add(task)
-          .then(() => openProject(activeProject));
-
-        taskInput.value = '';
-        assigneeInput.value = '';
-      } else {
-        alert('Введите название задачи и ФИО ответственного');
-      }
-    }
-
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', (event) => {
-        const columnId = event.target.closest('.column').id;
-        addTask(columnId);
-      });
-    });
 
     function allowDrop(event) {
       event.preventDefault();
