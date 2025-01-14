@@ -389,9 +389,35 @@
     }
 
     function updateTaskColumn(taskId, column) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column
-      }).then(() => openProject(activeProject));
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column })
+        .then(() => openProject(activeProject));
+    }
+    
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', addTask);
+    });
+
+    function addTask(event) {
+      const columnId = event.target.closest('.column').id;
+      const taskInput = event.target.previousElementSibling;
+      const taskText = taskInput.value.trim();
+
+      if (taskText === '') return;
+
+      const task = {
+        name: taskText,
+        column: columnId,
+      };
+
+      firestore.collection('projects').doc(activeProject).collection('tasks').add(task)
+        .then(() => {
+          taskInput.value = '';  // Очистить поле ввода
+          openProject(activeProject);  // Перезагрузить задачи на доске
+        })
+        .catch(error => {
+          console.error('Ошибка при добавлении задачи:', error);
+          alert('Не удалось добавить задачу');
+        });
     }
   </script>
 </body>
