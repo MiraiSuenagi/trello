@@ -186,14 +186,29 @@
   <div id="board">
     <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Введите задачу">
+        <input type="text" class="assignee-input" placeholder="Введите ответственного">
+        <button class="add-button">Добавить задачу</button>
+      </div>
       <div class="tasks" id="todo-tasks"></div>
     </div>
     <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Введите задачу">
+        <input type="text" class="assignee-input" placeholder="Введите ответственного">
+        <button class="add-button">Добавить задачу</button>
+      </div>
       <div class="tasks" id="in-progress-tasks"></div>
     </div>
     <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Введите задачу">
+        <input type="text" class="assignee-input" placeholder="Введите ответственного">
+        <button class="add-button">Добавить задачу</button>
+      </div>
       <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
@@ -343,20 +358,30 @@
 
       const editButton = document.createElement('button');
       editButton.textContent = 'Редактировать';
-      editButton.addEventListener('click', () => editTaskAssignee(taskId));
+      editButton.addEventListener('click', () => editTask(taskId));
+
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Удалить';
+      deleteButton.classList.add('delete-task');
+      deleteButton.addEventListener('click', () => deleteTask(taskId));
 
       task.appendChild(editButton);
-
-      if (column === 'done') {
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'delete-task';
-        deleteButton.textContent = 'Удалить';
-        deleteButton.addEventListener('click', () => deleteTask(taskId));
-
-        task.appendChild(deleteButton);
-      }
-
+      task.appendChild(deleteButton);
       return task;
+    }
+
+    function deleteTask(taskId) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
+        .then(() => openProject(activeProject));
+    }
+
+    function editTask(taskId) {
+      const newTaskName = prompt('Введите новое название задачи:');
+      if (newTaskName) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
+          .update({ name: newTaskName })
+          .then(() => openProject(activeProject));
+      }
     }
 
     function addTask(column) {
@@ -390,20 +415,6 @@
       });
     });
 
-    function editTaskAssignee(taskId) {
-      const assigneeName = prompt('Введите ФИО ответственного:');
-      if (assigneeName) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-          assignee: assigneeName
-        }).then(() => openProject(activeProject));
-      }
-    }
-
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => openProject(activeProject));
-    }
-
     function allowDrop(event) {
       event.preventDefault();
     }
@@ -412,10 +423,10 @@
       event.preventDefault();
       const taskId = event.dataTransfer.getData('taskId');
       const columnId = event.target.closest('.column').id;
-
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column: columnId
-      }).then(() => openProject(activeProject));
+      
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId)
+        .update({ column: columnId })
+        .then(() => openProject(activeProject));
     }
   </script>
 </body>
