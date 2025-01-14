@@ -1,238 +1,125 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Проектное Управление</title>
+  <title>Project Management</title>
   <style>
-    /* Добавьте стили для улучшения дизайна */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f0f0f0;
-    }
-
-    #auth-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    #project-list {
+    /* Добавьте стили для вашего интерфейса */
+    #projects {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-start;
-      padding: 20px;
-      display: none;
-    }
-
-    .program {
-      background-color: #ffffff;
-      padding: 15px;
-      margin: 10px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-    }
-
-    .project-container {
-      margin-top: 10px;
-      display: none;
     }
 
     .project {
-      background-color: #ececec;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 4px;
-    }
-
-    #logout-button {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background-color: #d9534f;
-      color: white;
-      border: none;
-      cursor: pointer;
+      background-color: #f0f0f0;
+      margin: 10px;
+      padding: 20px;
       border-radius: 5px;
-    }
-
-    #add-program-button {
-      margin: 20px;
-      padding: 10px;
-      font-size: 18px;
-      background-color: #5bc0de;
-      color: white;
-      border: none;
       cursor: pointer;
-      border-radius: 5px;
     }
 
-    #add-program-button:hover {
-      background-color: #31b0d5;
+    .project:hover {
+      background-color: #e0e0e0;
+    }
+
+    #programs {
+      margin-top: 20px;
+    }
+
+    #logout {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: red;
+      color: white;
+      padding: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="auth-container">
-    <div>
-      <input type="email" id="email" placeholder="Email" /><br />
-      <input type="password" id="password" placeholder="Пароль" /><br />
-      <button id="login-button">Войти</button>
-    </div>
+  <div id="logout">Logout</div>
+  <div id="projects">
+    <!-- Проекты будут отображаться здесь -->
   </div>
 
-  <div id="project-list">
-    <button id="add-program-button">+ Добавить программу</button>
+  <div id="programs">
     <!-- Программы будут отображаться здесь -->
   </div>
 
-  <div id="board">
-    <!-- Доска с задачами -->
-  </div>
-
-  <button id="logout-button">Выйти</button>
-
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <!-- Добавьте подключение Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js"></script>
   <script>
-    // Firebase конфигурация
+    // Инициализация Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
       projectId: "trellokz123",
       storageBucket: "trellokz123.appspot.com",
-      messagingSenderId: "902282094089",
-      appId: "1:902282094089:web:20f3874fd2393aa42f3ad8",
-      measurementId: "G-7HPT7Q512K"
+      messagingSenderId: "123456789012",
+      appId: "1:123456789012:web:abcdef123456",
+      measurementId: "G-XYZ123ABC"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const firestore = firebase.firestore();
+    const db = firebase.firestore();
 
-    const authContainer = document.getElementById('auth-container');
-    const projectList = document.getElementById('project-list');
-    const board = document.getElementById('board');
-    const logoutButton = document.getElementById('logout-button');
-
-    let activeProject = null;
-    let activeProgram = null;
-
-    // Проверка состояния авторизации
-    auth.onAuthStateChanged(user => {
-      console.log('User state changed:', user); // Отладочное сообщение
-      if (user) {
-        authContainer.style.display = 'none';
-        projectList.style.display = 'flex';
-        board.style.display = 'flex'; // Показываем доску после авторизации
-        loadPrograms();
-      } else {
-        authContainer.style.display = 'flex';
-        projectList.style.display = 'none';
-        board.style.display = 'none';
-      }
-    });
-
-    // Авторизация
-    document.getElementById('login-button').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          authContainer.style.display = 'none';
-          projectList.style.display = 'flex';
-          board.style.display = 'flex'; // Показываем доску после авторизации
-          loadPrograms();
-        })
-        .catch(error => {
-          console.error('Ошибка авторизации:', error);
-          alert('Неверный email или пароль');
+    // Функция для отображения программ
+    function displayPrograms() {
+      db.collection("programs").get().then((querySnapshot) => {
+        let programsHtml = '';
+        querySnapshot.forEach((doc) => {
+          programsHtml += `<div class="program">${doc.data().name}</div>`;
         });
+        document.getElementById('programs').innerHTML = programsHtml;
+      }).catch((error) => {
+        console.error("Error getting programs: ", error);
+      });
+    }
+
+    // Функция для отображения проектов
+    function displayProjects() {
+      db.collection("projects").get().then((querySnapshot) => {
+        let projectsHtml = '';
+        querySnapshot.forEach((doc) => {
+          projectsHtml += `<div class="project">${doc.data().name}</div>`;
+        });
+        document.getElementById('projects').innerHTML = projectsHtml;
+      }).catch((error) => {
+        console.error("Error getting projects: ", error);
+      });
+    }
+
+    // Обработчик события выхода из системы
+    document.getElementById('logout').addEventListener('click', () => {
+      auth.signOut().then(() => {
+        window.location.href = '/login'; // Перенаправление на страницу входа
+      }).catch((error) => {
+        console.error("Error logging out: ", error);
+      });
     });
 
-    // Выход из системы
-    logoutButton.addEventListener('click', () => {
-      auth.signOut()
-        .then(() => {
-          authContainer.style.display = 'flex';
-          projectList.style.display = 'none';
-          board.style.display = 'none';
-        })
-        .catch(error => console.error('Ошибка выхода:', error));
-    });
-
-    // Загрузка программ
-    function loadPrograms() {
-      console.log('Loading programs...');
-      projectList.innerHTML = '';
-      firestore.collection('programs').get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            console.log('No programs found!');
-            return;
-          }
-          snapshot.forEach(doc => {
-            const program = doc.data();
-            const programElement = document.createElement('div');
-            programElement.className = 'program';
-            programElement.textContent = program.name;
-            programElement.addEventListener('click', () => toggleProgram(doc.id));
-
-            const projectContainer = document.createElement('div');
-            projectContainer.className = 'project-container';
-
-            programElement.appendChild(projectContainer);
-            projectList.appendChild(programElement);
-
-            console.log('Loading projects for program: ', program.name);
-            loadProjects(doc.id, projectContainer);
-          });
-        })
-        .catch(error => console.error('Error loading programs: ', error));
-    }
-
-    // Раскрытие программы
-    function toggleProgram(programId) {
-      const programElement = document.querySelector(`[data-id='${programId}']`);
-      const projectsContainer = programElement.querySelector('.project-container');
-      projectsContainer.classList.toggle('expanded');
-      loadProjects(programId, projectsContainer);
-    }
-
-    // Загрузка проектов для программы
-    function loadProjects(programId, container) {
-      firestore.collection('programs').doc(programId).collection('projects').get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            console.log('No projects found for this program');
-            return;
-          }
-          snapshot.forEach(doc => {
-            const project = doc.data();
-            const projectElement = document.createElement('div');
-            projectElement.className = 'project';
-            projectElement.textContent = project.name;
-            container.appendChild(projectElement);
-          });
-        })
-        .catch(error => console.error('Error loading projects: ', error));
-    }
-
-    // Добавление программы
-    document.getElementById('add-program-button').addEventListener('click', () => {
-      const programName = prompt('Введите имя программы:');
-      if (programName) {
-        firestore.collection('programs').add({ name: programName })
-          .then(() => loadPrograms());
+    // Слушаем события авторизации
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Если пользователь авторизован, загружаем проекты и программы
+        displayProjects();
+        displayPrograms();
+      } else {
+        // Если пользователь не авторизован, перенаправляем на страницу входа
+        window.location.href = '/login';
       }
     });
+
+    // Вход пользователя
+    auth.signInWithEmailAndPassword('user@example.com', 'password').catch((error) => {
+      console.error("Error signing in: ", error);
+    });
+
   </script>
 </body>
 </html>
