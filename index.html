@@ -98,6 +98,7 @@
       padding: 20px;
       max-width: 1200px;
       width: 100%;
+      margin-left: 320px; /* Сдвигаем доску вправо */
     }
     .column {
       background: #ebecf0;
@@ -185,6 +186,17 @@
     }
     .active-project {
       background: #cce5ff;
+    }
+    .assign-button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .assign-button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
@@ -389,58 +401,48 @@
       deleteButton.textContent = 'Удалить';
       deleteButton.addEventListener('click', () => deleteTask(taskId));
 
+      const assignButton = document.createElement('button');
+      assignButton.className = 'assign-button';
+      assignButton.textContent = 'Назначить исполнителя';
+      assignButton.addEventListener('click', () => assignTask(taskId));
+
       task.appendChild(deleteButton);
+      task.appendChild(assignButton);
       return task;
     }
 
-    // Drag and Drop functionality
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', event => {
-        event.preventDefault();
-        const draggingTask = document.querySelector('.task.dragging');
-        container.appendChild(draggingTask);
-      });
-    });
+    // Assign task to user
+    function assignTask(taskId) {
+      const assignee = prompt('Введите email исполнителя:');
+      if (assignee) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ assignee: assignee });
+      }
+    }
+
+    // Update task column
+    function updateTaskColumn(taskId, newColumn) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column: newColumn });
+    }
+
+    // Delete task
+    function deleteTask(taskId) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete();
+    }
 
     // Add task
-    document.querySelectorAll('.add-button').forEach((button, index) => {
+    document.querySelectorAll('.add-button').forEach(button => {
       button.addEventListener('click', () => {
         const taskInput = button.previousElementSibling;
         const taskText = taskInput.value.trim();
         if (taskText && activeProject) {
+          const taskColumn = button.closest('.column').id;
           firestore.collection('projects').doc(activeProject).collection('tasks').add({
             name: taskText,
-            column: ['todo', 'in-progress', 'done'][index]
-          }).then(() => {
-            taskInput.value = '';
-            openProject(activeProject);
-          });
+            column: taskColumn
+          }).then(() => taskInput.value = '');
         }
       });
     });
-
-    // Delete task
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => openProject(activeProject));
-    }
-
-    // Update task column
-    function updateTaskColumn(taskId, column) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column
-      }).then(() => openProject(activeProject));
-    }
-
-    // Add assignee to task
-    function addAssignee(taskId) {
-      const assigneeEmail = prompt('Введите email исполнителя');
-      if (assigneeEmail) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-          assignee: assigneeEmail
-        }).then(() => openProject(activeProject));
-      }
-    }
   </script>
 </body>
 </html>
