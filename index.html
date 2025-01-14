@@ -5,35 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
-    /* Стиль оставляем тот же, без изменений */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f4f5f7;
       display: flex;
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
     }
-    /* Остальные стили остаются неизменными */
+    #auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+    #auth-container input {
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 300px;
+    }
+    #auth-container button {
+      padding: 10px 20px;
+      background: #0079bf;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #auth-container button:hover {
+      background: #005a8c;
+    }
     #project-list {
       display: none;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-top: 20px;
-      margin-left: 20px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px;
     }
     .project {
       background: #ffffff;
       color: #333;
       padding: 10px 20px;
       border-radius: 5px;
+      border: 1px solid #ccc;
       cursor: pointer;
       transition: background 0.2s;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
     }
     .project:hover {
       background: #f0f0f0;
@@ -52,12 +76,10 @@
     }
     #board {
       display: none;
-      flex-direction: row;
       gap: 20px;
       padding: 20px;
       max-width: 1200px;
       width: 100%;
-      margin-left: 20px;
     }
     .column {
       background: #ebecf0;
@@ -67,7 +89,6 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      min-height: 300px;
     }
     .column h3 {
       margin: 0 0 10px;
@@ -82,7 +103,6 @@
       border-radius: 6px;
       min-height: 300px;
       overflow-y: auto;
-      margin-bottom: 10px;
     }
     .task {
       background: #ffffff;
@@ -104,6 +124,7 @@
       padding: 5px;
       cursor: pointer;
       margin-left: 10px;
+      margin-top: 5px;
     }
     .delete-task:hover {
       background: #c9302c;
@@ -144,42 +165,6 @@
     #logout-button:hover {
       background: #c9302c;
     }
-    #modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      align-items: center;
-      justify-content: center;
-    }
-    #modal-content {
-      background-color: white;
-      padding: 20px;
-      border-radius: 5px;
-      width: 300px;
-      text-align: center;
-    }
-    #modal input {
-      padding: 8px;
-      margin: 10px 0;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    #modal button {
-      background-color: #5aac44;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #modal button:hover {
-      background-color: #519839;
-    }
   </style>
 </head>
 <body>
@@ -190,51 +175,43 @@
   </div>
 
   <div id="project-list">
-    <button id="add-project-button">+</button>
+    <button id="add-project-button">Добавить проект</button>
   </div>
 
   <div id="board">
-    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="todo">
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="todo-tasks"></div>
+      <div class="tasks"></div>
     </div>
-    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="in-progress">
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="in-progress-tasks"></div>
+      <div class="tasks"></div>
     </div>
-    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+    <div class="column" id="done">
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks" id="done-tasks"></div>
+      <div class="tasks"></div>
     </div>
   </div>
 
   <button id="logout-button">Выйти</button>
 
-  <!-- Modal for adding responsible person -->
-  <div id="modal">
-    <div id="modal-content">
-      <h3>Введите email ответственного</h3>
-      <input type="email" id="responsible-email" placeholder="Email ответственного">
-      <button id="save-responsible">Сохранить</button>
-    </div>
-  </div>
-
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
   <script>
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
@@ -253,10 +230,10 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
-    const modal = document.getElementById('modal');
-    const saveResponsibleButton = document.getElementById('save-responsible');
-    let activeTaskId = null;
 
+    let activeProject = null;
+
+    // Check auth state
     auth.onAuthStateChanged(user => {
       if (user) {
         authContainer.style.display = 'none';
@@ -269,6 +246,7 @@
       }
     });
 
+    // Login
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -285,6 +263,7 @@
         });
     });
 
+    // Logout
     logoutButton.addEventListener('click', () => {
       auth.signOut()
         .then(() => {
@@ -295,9 +274,12 @@
         .catch(error => console.error('Ошибка выхода:', error));
     });
 
+    // Load projects
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">+</button>';
+      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+
       document.getElementById('add-project-button').addEventListener('click', addProject);
+
       firestore.collection('projects').get()
         .then(snapshot => {
           snapshot.forEach(doc => {
@@ -321,99 +303,116 @@
         });
     }
 
+    // Add project with unique name check
     function addProject() {
       const projectName = prompt('Введите имя нового проекта:');
       if (!projectName) return;
 
-      firestore.collection('projects').add({ name: projectName })
-        .then(() => loadProjects());
+      firestore.collection('projects').where("name", "==", projectName).get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            firestore.collection('projects').add({ name: projectName })
+              .then(() => loadProjects());
+          } else {
+            alert("Проект с таким названием уже существует");
+          }
+        });
     }
 
+    // Delete project
     function deleteProject(projectId) {
       firestore.collection('projects').doc(projectId).delete()
         .then(() => loadProjects());
     }
 
+    // Open project
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
+
       firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(taskContainer => {
-            taskContainer.innerHTML = '';
-          });
-
+          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = document.createElement('div');
-            taskElement.className = 'task';
-            taskElement.textContent = task.name;
-            taskElement.setAttribute('draggable', true);
-            taskElement.setAttribute('data-task-id', doc.id);
-            taskElement.addEventListener('click', () => openTaskModal(doc.id));
-
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-task';
-            deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteTask(projectId, doc.id));
-
-            taskElement.appendChild(deleteButton);
-            document.getElementById(task.column + '-tasks').appendChild(taskElement);
+            const taskElement = createTaskElement(doc.id, task.name, task.column);
+            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
-    function deleteTask(projectId, taskId) {
-      firestore.collection('projects').doc(projectId).collection('tasks').doc(taskId).delete()
+    // Create task element
+    function createTaskElement(taskId, taskText, column) {
+      const task = document.createElement('div');
+      task.className = 'task';
+      task.textContent = taskText;
+      task.draggable = true;
+      task.dataset.taskId = taskId;
+
+      task.addEventListener('dragstart', () => {
+        task.classList.add('dragging');
+      });
+
+      task.addEventListener('dragend', () => {
+        task.classList.remove('dragging');
+        const newColumn = task.closest('.column').id;
+        updateTaskColumn(taskId, newColumn);
+      });
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-task';
+      deleteButton.textContent = 'Удалить';
+      deleteButton.addEventListener('click', () => deleteTask(taskId));
+
+      task.appendChild(deleteButton);
+      return task;
+    }
+
+    // Delete task
+    function deleteTask(taskId) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
     }
 
-    function openTaskModal(taskId) {
-      activeTaskId = taskId;
-      modal.style.display = 'flex';
-    }
-
-    saveResponsibleButton.addEventListener('click', () => {
-      const responsibleEmail = document.getElementById('responsible-email').value.trim();
-      if (activeTaskId && responsibleEmail) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(activeTaskId).update({
-          responsible: responsibleEmail
-        }).then(() => {
-          modal.style.display = 'none';
-          openProject(activeProject);
-        });
-      }
-    });
-
-    function allowDrop(ev) {
-      ev.preventDefault();
-    }
-
-    function drop(ev) {
-      ev.preventDefault();
-      const taskId = ev.dataTransfer.getData("taskId");
-      const column = ev.target.id;
-      if (!taskId || !column) return;
-
+    // Update task column
+    function updateTaskColumn(taskId, column) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
         column: column
       }).then(() => openProject(activeProject));
     }
 
-    document.querySelectorAll('.task-input').forEach(input => {
-      input.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          const taskText = input.value.trim();
-          if (!taskText) return;
-          const column = input.closest('.column').id.split('-')[0];
+    // Add task to a column
+    document.querySelectorAll('.add-button').forEach(button => {
+      button.addEventListener('click', (event) => {
+        const input = event.target.previousElementSibling;
+        const taskText = input.value.trim();
+        if (!taskText) return;
 
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: column
-          }).then(() => {
-            input.value = '';
-            openProject(activeProject);
-          });
+        const column = event.target.closest('.column').id;
+        firestore.collection('projects').doc(activeProject).collection('tasks').add({
+          name: taskText,
+          column: column
+        }).then(() => openProject(activeProject));
+
+        input.value = '';
+      });
+    });
+
+    // Enable dragging and dropping tasks between columns
+    document.querySelectorAll('.column').forEach(column => {
+      column.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        const draggingTask = document.querySelector('.task.dragging');
+        if (draggingTask && !column.contains(draggingTask)) {
+          column.querySelector('.tasks').appendChild(draggingTask);
+        }
+      });
+
+      column.addEventListener('drop', (event) => {
+        const taskId = event.target.closest('.task')?.dataset.taskId;
+        if (taskId) {
+          const newColumn = column.id;
+          updateTaskColumn(taskId, newColumn);
         }
       });
     });
