@@ -290,31 +290,45 @@
       auth.signOut();
     });
 
-    function loadProjects() {
-      firestore.collection('projects').get().then(snapshot => {
-        projectList.innerHTML = '<button id="add-project-button">+</button>';
-        snapshot.forEach(doc => {
-          const project = doc.data();
-          const projectElement = document.createElement('div');
-          projectElement.className = 'project';
-          projectElement.textContent = project.name;
-          projectElement.addEventListener('click', () => openProject(doc.id));
+   function loadProjectBoard() {
+  console.log("Загрузка доски проекта с ID:", activeProject);
+  
+  const todoColumn = document.getElementById('todo');
+  const inProgressColumn = document.getElementById('in-progress');
+  const doneColumn = document.getElementById('done');
 
-          const deleteButton = document.createElement('button');
-          deleteButton.className = 'delete-project';
-          deleteButton.textContent = 'Удалить';
-          deleteButton.addEventListener('click', event => {
-            event.stopPropagation();
-            deleteProject(doc.id);
-          });
+  if (!todoColumn || !inProgressColumn || !doneColumn) {
+    console.error("Не найдены элементы для колонок доски!");
+    return;
+  }
 
-          projectElement.appendChild(deleteButton);
-          projectList.appendChild(projectElement);
-        });
-      }).catch(error => {
-        console.error("Ошибка при загрузке проектов:", error);
+  const columns = {
+    todo: todoColumn.querySelector('.tasks'),
+    'in-progress': inProgressColumn.querySelector('.tasks'),
+    done: doneColumn.querySelector('.tasks')
+  };
+
+  firestore.collection('projects').doc(activeProject).collection('tasks')
+    .get()
+    .then(snapshot => {
+      snapshot.forEach(doc => {
+        const task = doc.data();
+        console.log("Задача:", task); // Логируем данные задачи
+
+        const taskColumn = task.column; // Колонка задачи
+        if (!columns[taskColumn]) {
+          console.error(`Не удалось найти колонку для задачи с ID: ${doc.id}`);
+          return;
+        }
+
+        const taskElement = createTaskElement(doc.id, task.name, taskColumn, task.assignee);
+        columns[taskColumn].appendChild(taskElement);
       });
-    }
+    }).catch(error => {
+      console.error("Ошибка загрузки задач:", error);
+    });
+}
+
 
     addProjectButton.addEventListener('click', () => {
       const projectName = prompt("Введите название нового проекта:");
