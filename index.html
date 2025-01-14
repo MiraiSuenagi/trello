@@ -122,6 +122,7 @@
       border-radius: 6px;
       min-height: 300px;
       overflow-y: auto;
+      margin-right: 20px; /* сдвигаем задачи вправо */
     }
     .task {
       background: #ffffff;
@@ -345,12 +346,13 @@
           .then(snapshot => {
             if (snapshot.empty) {
               firestore.collection('projects').add({
-                name: projectName
-              }).then(() => {
+                name: projectName,
+              }).then(docRef => {
                 loadProjects();
-              });
+                alert('Проект добавлен!');
+              }).catch(error => console.error('Ошибка добавления проекта:', error));
             } else {
-              alert('Проект с таким названием уже существует');
+              alert('Проект с таким названием уже существует.');
             }
           });
       }
@@ -358,17 +360,14 @@
 
     // Delete project
     function deleteProject(projectId) {
-      if (confirm('Вы уверены, что хотите удалить этот проект?')) {
-        firestore.collection('projects').doc(projectId).delete()
-          .then(() => {
-            loadProjects();
-            board.style.display = 'none';
-          })
-          .catch(error => console.error('Ошибка удаления проекта:', error));
-      }
+      firestore.collection('projects').doc(projectId).delete()
+        .then(() => {
+          loadProjects();
+        })
+        .catch(error => console.error('Ошибка удаления проекта:', error));
     }
 
-    // Open project
+    // Open project board
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
@@ -383,79 +382,11 @@
           });
         });
 
-      // Подсвечиваем активный проект
       document.querySelectorAll('.project').forEach(projectElement => {
         projectElement.classList.remove('active-project');
       });
       document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
-
-    // Create task element
-    function createTaskElement(taskId, taskName, column, assignee) {
-      const taskElement = document.createElement('div');
-      taskElement.className = 'task';
-      taskElement.setAttribute('data-id', taskId);
-
-      const taskText = document.createElement('span');
-      taskText.textContent = taskName;
-
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-task';
-      deleteButton.textContent = 'Удалить';
-      deleteButton.addEventListener('click', () => deleteTask(taskId));
-
-      const assignButton = document.createElement('button');
-      assignButton.className = 'assign-button';
-      assignButton.textContent = assignee || 'Назначить';
-      assignButton.addEventListener('click', () => assignTask(taskId));
-
-      taskElement.appendChild(taskText);
-      taskElement.appendChild(assignButton);
-      taskElement.appendChild(deleteButton);
-
-      return taskElement;
-    }
-
-    // Delete task
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => {
-          document.querySelector(`[data-id="${taskId}"]`).remove();
-        });
-    }
-
-    // Assign task
-    function assignTask(taskId) {
-      const assignee = prompt('Введите имя исполнителя:');
-      if (assignee) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-          assignee: assignee
-        }).then(() => {
-          loadProjects(); // To refresh the list
-        });
-      }
-    }
-
-    // Add task
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        if (taskText && activeProject) {
-          const taskColumn = button.closest('.column').id;
-
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: taskColumn
-          }).then(docRef => {
-            // Создаем задачу сразу в интерфейсе
-            const taskElement = createTaskElement(docRef.id, taskText, taskColumn, '');
-            document.getElementById(taskColumn).querySelector('.tasks').appendChild(taskElement);
-            taskInput.value = ''; // Очищаем поле ввода
-          });
-        }
-      });
-    });
   </script>
 </body>
 </html>
