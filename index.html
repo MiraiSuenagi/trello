@@ -5,10 +5,198 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
-    /* Оставляем стили без изменений */
-    /* ... */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f5f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #auth-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+    #auth-container input {
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 300px;
+    }
+    #auth-container button {
+      padding: 10px 20px;
+      background: #0079bf;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #auth-container button:hover {
+      background: #005a8c;
+    }
+    #project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: absolute;
+      top: 50px;
+      left: 20px;
+    }
+    .project {
+      background: #ffffff;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .project:hover {
+      background: #f0f0f0;
+    }
+    .delete-project {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .delete-project:hover {
+      background: #c9302c;
+    }
+    #add-project-button {
+      padding: 10px;
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    #add-project-button:hover {
+      background: #519839;
+    }
+    #board {
+      display: none;
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin-left: 320px; /* Сдвигаем доску вправо */
+    }
+    .column {
+      background: #ebecf0;
+      border-radius: 8px;
+      padding: 10px;
+      width: 300px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    .column h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+    }
+    .tasks {
+      flex-grow: 1;
+      padding: 10px;
+      background: #f4f5f7;
+      border-radius: 6px;
+      min-height: 300px;
+      overflow-y: auto;
+    }
+    .task {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      cursor: grab;
+      transition: background 0.2s;
+    }
+    .task:hover {
+      background: #f0f8ff;
+    }
+    .delete-task {
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-top: 5px;
+    }
+    .delete-task:hover {
+      background: #c9302c;
+    }
+    .add-task-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .task-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .add-button {
+      padding: 8px 12px;
+      background: #5aac44;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #519839;
+    }
+    #logout-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #logout-button:hover {
+      background: #c9302c;
+    }
     .active-project {
       background: #cce5ff;
+    }
+    .assign-button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    .assign-button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
@@ -24,7 +212,30 @@
   </div>
 
   <div id="board">
-    <!-- Остальной код для доски -->
+    <div class="column" id="todo">
+      <h3>To Do</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
+      <div class="tasks"></div>
+    </div>
+    <div class="column" id="in-progress">
+      <h3>In Progress</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
+      <div class="tasks"></div>
+    </div>
+    <div class="column" id="done">
+      <h3>Done</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button">Добавить</button>
+      </div>
+      <div class="tasks"></div>
+    </div>
   </div>
 
   <button id="logout-button">Выйти</button>
@@ -52,6 +263,8 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
+    const addProjectButton = document.getElementById('add-project-button');
+
     let activeProject = null;
 
     // Check auth state
@@ -92,12 +305,7 @@
           projectElement.className = 'project';
           projectElement.textContent = project.name;
           projectElement.addEventListener('click', () => openProject(doc.id));
-
-          // Set active class if it's the active project
-          if (activeProject === doc.id) {
-            projectElement.classList.add('active-project');
-          }
-
+          
           const deleteButton = document.createElement('button');
           deleteButton.className = 'delete-project';
           deleteButton.textContent = 'Удалить';
@@ -112,14 +320,14 @@
       });
     }
 
-    // Add new project
-    document.getElementById('add-project-button').addEventListener('click', () => {
-      const projectName = prompt('Введите название проекта');
+    // Add project
+    addProjectButton.addEventListener('click', () => {
+      const projectName = prompt("Введите название нового проекта:");
       if (projectName) {
         firestore.collection('projects').add({
           name: projectName
         }).then(() => {
-          loadProjects(); // Reload the projects after adding the new one
+          loadProjects();
         }).catch(error => {
           console.error("Ошибка при добавлении проекта:", error);
         });
@@ -131,7 +339,6 @@
       activeProject = projectId;
       board.style.display = 'flex';
       loadProjectBoard();
-      loadProjects(); // Update the active project in the project list
     }
 
     // Load project board
@@ -144,7 +351,7 @@
             'in-progress': document.getElementById('in-progress').querySelector('.tasks'),
             done: document.getElementById('done').querySelector('.tasks')
           };
-
+          
           snapshot.forEach(doc => {
             const task = doc.data();
             const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
@@ -159,7 +366,7 @@
       task.className = 'task';
       task.textContent = `${taskText} - ${assignee ? assignee : 'Нет исполнителя'}`;
       task.draggable = true;
-
+      
       task.addEventListener('dragstart', () => {
         task.classList.add('dragging');
       });
@@ -184,30 +391,6 @@
       task.appendChild(assignButton);
       return task;
     }
-
-    // Add new task
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-
-        if (taskText && activeProject) {
-          const taskColumn = button.closest('.column').id;
-
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: taskColumn
-          }).then(docRef => {
-            const newTaskElement = createTaskElement(docRef.id, taskText, taskColumn, null);
-            document.getElementById(taskColumn).querySelector('.tasks').appendChild(newTaskElement);
-            taskInput.value = '';
-          }).catch(error => {
-            console.error("Ошибка при добавлении задачи:", error);
-            alert("Не удалось добавить задачу");
-          });
-        }
-      });
-    });
 
     // Assign task
     function assignTask(taskId) {
