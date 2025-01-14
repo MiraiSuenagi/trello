@@ -15,12 +15,14 @@
       align-items: center;
       min-height: 100vh;
     }
-    #auth-container, #admin-panel {
+    #auth-container, #admin-panel, #project-view {
       margin-top: 20px;
       padding: 20px;
       background: white;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
+      width: 90%;
+      max-width: 800px;
     }
     input, button {
       display: block;
@@ -28,6 +30,22 @@
       padding: 10px;
       width: 100%;
       max-width: 300px;
+    }
+    .task {
+      background: #ffffff;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+    .task:hover {
+      background: #f0f0f0;
+    }
+    .task-list {
+      margin-top: 20px;
+    }
+    .task-list h3 {
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -47,6 +65,17 @@
     <button id="add-project-button">Добавить проект</button>
     <h3>Список проектов</h3>
     <ul id="project-list"></ul>
+  </div>
+
+  <!-- Просмотр проекта -->
+  <div id="project-view" style="display: none;">
+    <button id="back-to-projects">Назад к проектам</button>
+    <h2 id="current-project-name"></h2>
+    <input type="text" id="task-name" placeholder="Название задачи">
+    <button id="add-task-button">Добавить задачу</button>
+    <div class="task-list" id="task-list">
+      <h3>Список задач:</h3>
+    </div>
   </div>
 
   <!-- Подключение Firebase -->
@@ -71,6 +100,8 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    let currentProject = null;
+
     // Вход пользователя
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
@@ -81,7 +112,7 @@
           alert('Успешный вход');
           document.getElementById('auth-container').style.display = 'none';
           document.getElementById('admin-panel').style.display = 'block';
-          loadProjects(); // Загрузка списка проектов
+          loadProjects();
         })
         .catch(error => {
           alert("Ошибка входа: " + error.message);
@@ -102,14 +133,14 @@
       })
       .then(() => {
         alert("Проект добавлен");
-        loadProjects(); // Перезагрузка списка проектов
+        loadProjects();
       })
       .catch(error => {
         alert("Ошибка добавления проекта: " + error.message);
       });
     });
 
-    // Загрузка списка проектов
+    // Загрузка проектов
     function loadProjects() {
       const projectList = document.getElementById('project-list');
       projectList.innerHTML = '';
@@ -119,11 +150,71 @@
           snapshot.forEach(doc => {
             const li = document.createElement('li');
             li.textContent = doc.data().name;
+            li.style.cursor = 'pointer';
+            li.addEventListener('click', () => {
+              openProject(doc.id);
+            });
             projectList.appendChild(li);
           });
         })
         .catch(error => {
           console.error("Ошибка загрузки проектов: ", error);
+        });
+    }
+
+    // Открытие проекта
+    function openProject(projectId) {
+      currentProject = projectId;
+      document.getElementById('admin-panel').style.display = 'none';
+      document.getElementById('project-view').style.display = 'block';
+      document.getElementById('current-project-name').textContent = `Проект: ${projectId}`;
+      loadTasks();
+    }
+
+    // Вернуться к списку проектов
+    document.getElementById('back-to-projects').addEventListener('click', () => {
+      currentProject = null;
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('project-view').style.display = 'none';
+    });
+
+    // Добавление задачи
+    document.getElementById('add-task-button').addEventListener('click', () => {
+      const taskName = document.getElementById('task-name').value.trim();
+      if (!taskName || !currentProject) {
+        alert("Введите название задачи");
+        return;
+      }
+
+      db.collection('projects').doc(currentProject).collection('tasks').add({
+        name: taskName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        alert("Задача добавлена");
+        loadTasks();
+      })
+      .catch(error => {
+        alert("Ошибка добавления задачи: " + error.message);
+      });
+    });
+
+    // Загрузка задач
+    function loadTasks() {
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '<h3>Список задач:</h3>';
+
+      db.collection('projects').doc(currentProject).collection('tasks').get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'task';
+            div.textContent = doc.data().name;
+            taskList.appendChild(div);
+          });
+        })
+        .catch(error => {
+          console.error("Ошибка загрузки задач: ", error);
         });
     }
   </script>
