@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -92,6 +91,7 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
+      min-height: 300px;
     }
     .column h3 {
       margin: 0 0 10px;
@@ -106,6 +106,7 @@
       border-radius: 6px;
       min-height: 300px;
       overflow-y: auto;
+      margin-bottom: 10px;
     }
     .task {
       background: #ffffff;
@@ -127,7 +128,6 @@
       padding: 5px;
       cursor: pointer;
       margin-left: 10px;
-      margin-top: 5px;
     }
     .delete-task:hover {
       background: #c9302c;
@@ -184,6 +184,42 @@
     #add-project-button:hover {
       background: #519839;
     }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      width: 300px;
+      text-align: center;
+    }
+    #modal input {
+      padding: 8px;
+      margin: 10px 0;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #modal button {
+      background-color: #5aac44;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #modal button:hover {
+      background-color: #519839;
+    }
   </style>
 </head>
 <body>
@@ -198,39 +234,47 @@
   </div>
 
   <div id="board">
-    <div class="column" id="todo">
+    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="todo-tasks"></div>
     </div>
-    <div class="column" id="in-progress">
+    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="in-progress-tasks"></div>
     </div>
-    <div class="column" id="done">
+    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
 
   <button id="logout-button">Выйти</button>
 
+  <!-- Modal for adding responsible person -->
+  <div id="modal">
+    <div id="modal-content">
+      <h3>Введите email ответственного</h3>
+      <input type="email" id="responsible-email" placeholder="Email ответственного">
+      <button id="save-responsible">Сохранить</button>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
@@ -249,10 +293,10 @@
     const projectList = document.getElementById('project-list');
     const board = document.getElementById('board');
     const logoutButton = document.getElementById('logout-button');
+    const modal = document.getElementById('modal');
+    const saveResponsibleButton = document.getElementById('save-responsible');
+    let activeTaskId = null;
 
-    let activeProject = null;
-
-    // Check auth state
     auth.onAuthStateChanged(user => {
       if (user) {
         authContainer.style.display = 'none';
@@ -265,7 +309,6 @@
       }
     });
 
-    // Login
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -282,7 +325,6 @@
         });
     });
 
-    // Logout
     logoutButton.addEventListener('click', () => {
       auth.signOut()
         .then(() => {
@@ -293,12 +335,9 @@
         .catch(error => console.error('Ошибка выхода:', error));
     });
 
-    // Load projects
     function loadProjects() {
       projectList.innerHTML = '<button id="add-project-button">+</button>';
-
       document.getElementById('add-project-button').addEventListener('click', addProject);
-
       firestore.collection('projects').get()
         .then(snapshot => {
           snapshot.forEach(doc => {
@@ -322,64 +361,44 @@
         });
     }
 
-    // Add project with unique name check
     function addProject() {
       const projectName = prompt('Введите имя нового проекта:');
       if (!projectName) return;
 
-      firestore.collection('projects').where("name", "==", projectName).get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            firestore.collection('projects').add({ name: projectName })
-              .then(() => loadProjects());
-          } else {
-            alert("Проект с таким названием уже существует");
-          }
-        });
+      firestore.collection('projects').add({ name: projectName })
+        .then(() => loadProjects());
     }
 
-    // Delete project
     function deleteProject(projectId) {
       firestore.collection('projects').doc(projectId).delete()
         .then(() => loadProjects());
     }
 
-    // Open project
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
-
       firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
             const taskElement = createTaskElement(doc.id, task.name, task.column, task.responsible);
-            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
+            document.getElementById(`${task.column}-tasks`).appendChild(taskElement);
           });
         });
     }
 
-    // Create task element
     function createTaskElement(taskId, taskText, column, responsible) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
+      task.id = taskId;
+      task.setAttribute('draggable', 'true');
 
-      const responsibleElement = document.createElement('span');
-      responsibleElement.textContent = `Ответственный: ${responsible}`;
-      task.appendChild(responsibleElement);
-
-      task.draggable = true;
-
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
-
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        const newColumn = task.closest('.column').id;
-        updateTaskColumn(taskId, newColumn);
+      task.addEventListener('click', () => {
+        activeTaskId = taskId;
+        document.getElementById('responsible-email').value = responsible || '';
+        modal.style.display = 'flex';
       });
 
       const deleteButton = document.createElement('button');
@@ -391,37 +410,55 @@
       return task;
     }
 
-    // Add task
-    document.querySelectorAll('.add-button').forEach((button, index) => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        const responsibleEmail = prompt("Введите email ответственного:");
-        if (taskText && activeProject) {
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: ['todo', 'in-progress', 'done'][index],
-            responsible: responsibleEmail
-          }).then(() => {
-            taskInput.value = '';
-            openProject(activeProject);
-          });
-        }
-      });
-    });
-
-    // Delete task
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
     }
 
-    // Update task column
-    function updateTaskColumn(taskId, column) {
+    saveResponsibleButton.addEventListener('click', () => {
+      const responsibleEmail = document.getElementById('responsible-email').value.trim();
+      if (activeTaskId && responsibleEmail) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(activeTaskId).update({
+          responsible: responsibleEmail
+        }).then(() => {
+          modal.style.display = 'none';
+          openProject(activeProject);
+        });
+      }
+    });
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const taskId = ev.dataTransfer.getData("taskId");
+      const column = ev.target.id;
+      if (!taskId || !column) return;
+      
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column
+        column: column
       }).then(() => openProject(activeProject));
     }
+
+    document.querySelectorAll('.task-input').forEach(input => {
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          const taskText = input.value.trim();
+          if (!taskText) return;
+          const column = input.closest('.column').id.split('-')[0];
+
+          firestore.collection('projects').doc(activeProject).collection('tasks').add({
+            name: taskText,
+            column: column
+          }).then(() => {
+            input.value = '';
+            openProject(activeProject);
+          });
+        }
+      });
+    });
   </script>
 </body>
 </html>
