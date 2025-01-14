@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Project Management System</title>
   <style>
+    /* Стиль для отображения программ и проектов */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -42,9 +43,7 @@
     }
     #project-list {
       display: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-direction: column;
       margin: 20px;
     }
     .program {
@@ -58,14 +57,16 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 10px;
     }
     .program:hover {
       background: #f0f0f0;
     }
     .program > .project-container {
       display: flex;
+      flex-direction: column;
       gap: 10px;
-      flex-wrap: nowrap;
+      margin-top: 10px;
     }
     .project {
       background: #ffffff;
@@ -75,31 +76,9 @@
       border: 1px solid #ccc;
       cursor: pointer;
       transition: background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
     .project:hover {
       background: #f0f0f0;
-    }
-    .project-container {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .add-button {
-      padding: 10px;
-      background: #5aac44;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-    .add-button:hover {
-      background: #519839;
     }
     #board {
       display: none;
@@ -142,19 +121,6 @@
     }
     .task:hover {
       background: #f0f8ff;
-    }
-    .delete-task {
-      background: #d9534f;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-left: 10px;
-      margin-top: 5px;
-    }
-    .delete-task:hover {
-      background: #c9302c;
     }
     .add-task-container {
       display: flex;
@@ -201,9 +167,7 @@
     <button id="login-button">Войти</button>
   </div>
 
-  <div id="project-list">
-    <button id="add-program-button" class="add-button">+</button>
-  </div>
+  <div id="project-list"></div>
 
   <div id="board">
     <div class="column" id="todo">
@@ -311,6 +275,10 @@
       projectList.innerHTML = '';
       firestore.collection('programs').get()
         .then(snapshot => {
+          if (snapshot.empty) {
+            console.log('No programs found!');
+            return;
+          }
           snapshot.forEach(doc => {
             const program = doc.data();
             const programElement = document.createElement('div');
@@ -324,9 +292,11 @@
             programElement.appendChild(projectContainer);
             projectList.appendChild(programElement);
 
+            console.log('Loading projects for program: ', program.name);
             loadProjects(doc.id, projectContainer);
           });
-        });
+        })
+        .catch(error => console.error('Error loading programs: ', error));
     }
 
     // Toggle program expansion
@@ -341,7 +311,10 @@
     function loadProjects(programId, container) {
       firestore.collection('programs').doc(programId).collection('projects').get()
         .then(snapshot => {
-          container.innerHTML = ''; // Clear previous projects
+          if (snapshot.empty) {
+            console.log('No projects found for this program');
+            return;
+          }
           snapshot.forEach(doc => {
             const project = doc.data();
             const projectElement = document.createElement('div');
@@ -349,7 +322,8 @@
             projectElement.textContent = project.name;
             container.appendChild(projectElement);
           });
-        });
+        })
+        .catch(error => console.error('Error loading projects: ', error));
     }
 
     // Add program
