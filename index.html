@@ -47,6 +47,26 @@
       gap: 10px;
       margin: 20px;
     }
+    .program {
+      background: #ffffff;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .program:hover {
+      background: #f0f0f0;
+    }
+    .program > .project-container {
+      display: flex;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
     .project {
       background: #ffffff;
       color: #333;
@@ -62,17 +82,24 @@
     .project:hover {
       background: #f0f0f0;
     }
-    .delete-project {
-      background: #d9534f;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-left: 10px;
+    .project-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
     }
-    .delete-project:hover {
-      background: #c9302c;
+    .add-button {
+      padding: 10px;
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .add-button:hover {
+      background: #519839;
     }
     #board {
       display: none;
@@ -140,7 +167,7 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    .add-button {
+    .add-task-button {
       padding: 8px 12px;
       background: #5aac44;
       color: #fff;
@@ -148,7 +175,7 @@
       border-radius: 4px;
       cursor: pointer;
     }
-    .add-button:hover {
+    .add-task-button:hover {
       background: #519839;
     }
     #logout-button {
@@ -175,7 +202,7 @@
   </div>
 
   <div id="project-list">
-    <button id="add-project-button">Добавить проект</button>
+    <button id="add-program-button" class="add-button">+</button>
   </div>
 
   <div id="board">
@@ -183,7 +210,7 @@
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-task-button">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -191,7 +218,7 @@
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-task-button">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -199,7 +226,7 @@
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+        <button class="add-task-button">Добавить</button>
       </div>
       <div class="tasks"></div>
     </div>
@@ -232,13 +259,14 @@
     const logoutButton = document.getElementById('logout-button');
 
     let activeProject = null;
+    let activeProgram = null;
 
     // Check auth state
     auth.onAuthStateChanged(user => {
       if (user) {
         authContainer.style.display = 'none';
         projectList.style.display = 'flex';
-        loadProjects();
+        loadPrograms();
       } else {
         authContainer.style.display = 'flex';
         projectList.style.display = 'none';
@@ -255,7 +283,7 @@
         .then(() => {
           authContainer.style.display = 'none';
           projectList.style.display = 'flex';
-          loadProjects();
+          loadPrograms();
         })
         .catch(error => {
           console.error('Ошибка авторизации:', error);
@@ -274,137 +302,60 @@
         .catch(error => console.error('Ошибка выхода:', error));
     });
 
-    // Load projects
-    function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
-
-      document.getElementById('add-project-button').addEventListener('click', addProject);
-
-      firestore.collection('projects').get()
+    // Load programs
+    function loadPrograms() {
+      projectList.innerHTML = '';
+      firestore.collection('programs').get()
         .then(snapshot => {
+          snapshot.forEach(doc => {
+            const program = doc.data();
+            const programElement = document.createElement('div');
+            programElement.className = 'program';
+            programElement.textContent = program.name;
+            programElement.addEventListener('click', () => toggleProgram(doc.id));
+
+            const projectContainer = document.createElement('div');
+            projectContainer.className = 'project-container';
+
+            programElement.appendChild(projectContainer);
+            projectList.appendChild(programElement);
+
+            loadProjects(doc.id, projectContainer);
+          });
+        });
+    }
+
+    // Toggle program expansion
+    function toggleProgram(programId) {
+      const programElement = document.querySelector(`[data-id='${programId}']`);
+      const projectsContainer = programElement.querySelector('.project-container');
+      projectsContainer.classList.toggle('expanded');
+      loadProjects(programId, projectsContainer);
+    }
+
+    // Load projects for a specific program
+    function loadProjects(programId, container) {
+      firestore.collection('programs').doc(programId).collection('projects').get()
+        .then(snapshot => {
+          container.innerHTML = ''; // Clear previous projects
           snapshot.forEach(doc => {
             const project = doc.data();
             const projectElement = document.createElement('div');
             projectElement.className = 'project';
-
-            const projectName = document.createElement('span');
-            projectName.textContent = project.name;
-            projectName.addEventListener('click', () => openProject(doc.id));
-
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-project';
-            deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteProject(doc.id));
-
-            projectElement.appendChild(projectName);
-            projectElement.appendChild(deleteButton);
-            projectList.appendChild(projectElement);
+            projectElement.textContent = project.name;
+            container.appendChild(projectElement);
           });
         });
     }
 
-    // Add project with unique name check
-    function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName) return;
-
-      firestore.collection('projects').where("name", "==", projectName).get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            firestore.collection('projects').add({ name: projectName })
-              .then(() => loadProjects());
-          } else {
-            alert("Проект с таким названием уже существует");
-          }
-        });
-    }
-
-    // Delete project
-    function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects());
-    }
-
-    // Open project
-    function openProject(projectId) {
-      activeProject = projectId;
-      board.style.display = 'flex';
-
-      firestore.collection('projects').doc(projectId).collection('tasks').get()
-        .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
-          snapshot.forEach(doc => {
-            const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column);
-            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
-          });
-        });
-    }
-
-    // Create task element
-    function createTaskElement(taskId, taskText, column) {
-      const task = document.createElement('div');
-      task.className = 'task';
-      task.textContent = taskText;
-      task.draggable = true;
-
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
-      });
-
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        const newColumn = task.closest('.column').id;
-        updateTaskColumn(taskId, newColumn);
-      });
-
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-task';
-      deleteButton.textContent = 'Удалить';
-      deleteButton.addEventListener('click', () => deleteTask(taskId));
-
-      task.appendChild(deleteButton);
-      return task;
-    }
-
-    // Drag and Drop functionality
-    document.querySelectorAll('.tasks').forEach(container => {
-      container.addEventListener('dragover', event => {
-        event.preventDefault();
-        const draggingTask = document.querySelector('.task.dragging');
-        container.appendChild(draggingTask);
-      });
+    // Add program
+    document.getElementById('add-program-button').addEventListener('click', () => {
+      const programName = prompt('Введите имя программы:');
+      if (programName) {
+        firestore.collection('programs').add({ name: programName })
+          .then(() => loadPrograms());
+      }
     });
-
-    // Add task
-    document.querySelectorAll('.add-button').forEach((button, index) => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        if (taskText && activeProject) {
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: ['todo', 'in-progress', 'done'][index]
-          }).then(() => {
-            taskInput.value = '';
-            openProject(activeProject);
-          });
-        }
-      });
-    });
-
-    // Delete task
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => openProject(activeProject));
-    }
-
-    // Update task column
-    function updateTaskColumn(taskId, column) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column
-      }).then(() => openProject(activeProject));
-    }
   </script>
 </body>
 </html>
