@@ -112,9 +112,6 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       cursor: grab;
       transition: background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
     .task:hover {
       background: #f0f8ff;
@@ -129,18 +126,6 @@
     }
     .delete-task:hover {
       background: #c9302c;
-    }
-    .edit-task {
-      background: #5bc0de;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-right: 5px;
-    }
-    .edit-task:hover {
-      background: #31b0d5;
     }
     .add-task-container {
       display: flex;
@@ -300,40 +285,62 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.description);
+            const taskElement = createTaskElement(doc.id, task.name);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText, taskDescription) {
+    function createTaskElement(taskId, taskText) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
+      task.draggable = true;
 
-      const descriptionButton = document.createElement('button');
-      descriptionButton.className = 'edit-task';
-      descriptionButton.textContent = 'Описание';
-      descriptionButton.addEventListener('click', () => editTaskDescription(taskId, taskDescription));
+      task.addEventListener('dragstart', () => {
+        task.classList.add('dragging');
+      });
+
+      task.addEventListener('dragend', () => {
+        task.classList.remove('dragging');
+        saveTaskPositions();
+      });
 
       const deleteButton = document.createElement('button');
       deleteButton.className = 'delete-task';
       deleteButton.textContent = 'Удалить';
       deleteButton.addEventListener('click', () => deleteTask(taskId));
 
-      task.appendChild(descriptionButton);
       task.appendChild(deleteButton);
       return task;
     }
 
-    // Edit task description
-    function editTaskDescription(taskId, currentDescription) {
-      const newDescription = prompt('Введите описание задачи:', currentDescription || '');
-      if (newDescription === null) return;
+    // Drag and Drop functionality
+    document.querySelectorAll('.tasks').forEach(container => {
+      container.addEventListener('dragover', e => {
+        e.preventDefault();
+        const draggingTask = document.querySelector('.dragging');
+        container.appendChild(draggingTask);
+      });
+    });
 
+    // Save task positions to Firestore
+    function saveTaskPositions() {
       if (!activeProject) return;
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ description: newDescription });
+      const tasks = {};
+
+      document.querySelectorAll('.column').forEach(column => {
+        const columnId = column.id;
+        tasks[columnId] = Array.from(column.querySelectorAll('.task')).map(task => task.firstChild.textContent);
+      });
+
+      const projectRef = firestore.collection('projects').doc(activeProject);
+      Object.entries(tasks).forEach(([column, taskArray]) => {
+        taskArray.forEach(taskName => {
+          projectRef.collection('tasks').doc(taskName).update({ column });
+        });
+      });
     }
 
     // Delete task
@@ -354,7 +361,7 @@
         const columnId = button.closest('.column').id;
         const projectRef = firestore.collection('projects').doc(activeProject);
 
-        projectRef.collection('tasks').add({ name: taskText, column: columnId, description: '' })
+        projectRef.collection('tasks').add({ name: taskText, column: columnId })
           .then(() => openProject(activeProject));
       });
     });
