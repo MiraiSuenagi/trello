@@ -237,6 +237,8 @@
       <div class="tasks"></div>
     </div>
   </div>
+  <!-- Добавьте это перед кнопкой "Выйти" -->
+<div id="user-info" style="position: absolute; top: 20px; right: 120px; font-size: 16px; color: #333;"></div>
 
   <button id="logout-button">Выйти</button>
 
@@ -267,17 +269,28 @@
     let activeProject = null;
 
     // Check auth state
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        authContainer.style.display = 'none';
-        projectList.style.display = 'flex';
-        loadProjects();
-      } else {
-        authContainer.style.display = 'flex';
-        projectList.style.display = 'none';
-        board.style.display = 'none';
-      }
-    });
+    
+auth.onAuthStateChanged(user => {
+  if (user) {
+    authContainer.style.display = 'none';
+    projectList.style.display = 'flex';
+    loadProjects();
+    
+    // Отображаем информацию о пользователе
+    const userInfoElement = document.getElementById('user-info');
+    userInfoElement.textContent = `Привет, ${user.email}`;
+    
+  } else {
+    authContainer.style.display = 'flex';
+    projectList.style.display = 'none';
+    board.style.display = 'none';
+    
+    // Скрываем информацию о пользователе, если не авторизован
+    const userInfoElement = document.getElementById('user-info');
+    userInfoElement.textContent = '';
+  }
+});
+
 
     // Login
     document.getElementById('login-button').addEventListener('click', () => {
