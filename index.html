@@ -214,6 +214,19 @@
 
     let activeProject = null;
 
+    // Check auth state
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        authContainer.style.display = 'none';
+        projectList.style.display = 'flex';
+        loadProjects();
+      } else {
+        authContainer.style.display = 'flex';
+        projectList.style.display = 'none';
+        board.style.display = 'none';
+      }
+    });
+
     // Login
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
@@ -285,14 +298,14 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name);
+            const taskElement = createTaskElement(doc.id, task.name, task.column);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText) {
+    function createTaskElement(taskId, taskText, column) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
@@ -304,7 +317,7 @@
 
       task.addEventListener('dragend', () => {
         task.classList.remove('dragging');
-        saveTaskPositions();
+        updateTaskColumn(taskId, column);
       });
 
       const deleteButton = document.createElement('button');
@@ -325,22 +338,14 @@
       });
     });
 
-    // Save task positions to Firestore
-    function saveTaskPositions() {
+    // Update task column in Firestore
+    function updateTaskColumn(taskId, newColumn) {
       if (!activeProject) return;
-      const tasks = {};
-
-      document.querySelectorAll('.column').forEach(column => {
-        const columnId = column.id;
-        tasks[columnId] = Array.from(column.querySelectorAll('.task')).map(task => task.firstChild.textContent);
-      });
 
       const projectRef = firestore.collection('projects').doc(activeProject);
-      Object.entries(tasks).forEach(([column, taskArray]) => {
-        taskArray.forEach(taskName => {
-          projectRef.collection('tasks').doc(taskName).update({ column });
-        });
-      });
+      projectRef.collection('tasks').doc(taskId).update({ column: newColumn })
+        .then(() => console.log(`Task ${taskId} updated to column ${newColumn}`))
+        .catch(error => console.error('Ошибка обновления задачи:', error));
     }
 
     // Delete task
