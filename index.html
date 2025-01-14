@@ -1,129 +1,253 @@
-<script>
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
-    authDomain: "trellokz123.firebaseapp.com",
-    projectId: "trellokz123",
-    storageBucket: "trellokz123.appspot.com",
-    messagingSenderId: "902282094089",
-    appId: "1:902282094089:web:20f3874fd2393aa42f3ad8",
-    measurementId: "G-7HPT7Q512K"
-  };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Management System</title>
+  <!-- Подключение шрифта Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Ваш стиль остается без изменений */
+  </style>
+</head>
+<body>
+  <div id="auth-container">
+    <input type="email" id="email" placeholder="Введите email">
+    <input type="password" id="password" placeholder="Введите пароль">
+    <button id="login-button">Войти</button>
+  </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const firestore = firebase.firestore();
+  <div id="project-list">
+    <button id="add-project-button">+</button>
+  </div>
 
-  let activeProject = null;
+  <div id="board">
+    <div class="column" id="todo">
+      <h3>To Do</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button" id="add-todo">Добавить</button>
+      </div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+    <div class="column" id="in-progress">
+      <h3>In Progress</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button" id="add-in-progress">Добавить</button>
+      </div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+    <div class="column" id="done">
+      <h3>Done</h3>
+      <div class="add-task-container">
+        <input type="text" class="task-input" placeholder="Новая задача">
+        <button class="add-button" id="add-done">Добавить</button>
+      </div>
+      <div class="tasks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+  </div>
 
-  // Check auth state
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      loadProjects();
-    }
-  });
+  <button id="logout-button">Выйти</button>
 
-  // Load projects
-  function loadProjects() {
-    firestore.collection('projects').get()
-      .then(snapshot => {
-        snapshot.forEach(doc => {
-          const projectData = doc.data();
-          const projectId = doc.id;
-          const projectElement = document.createElement('div');
-          projectElement.classList.add('project');
-          projectElement.textContent = projectData.name;
-          projectElement.addEventListener('click', () => openProject(projectId));
-          document.getElementById('project-list').appendChild(projectElement);
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
+      authDomain: "trellokz123.firebaseapp.com",
+      projectId: "trellokz123",
+      storageBucket: "trellokz123.appspot.com",
+      messagingSenderId: "902282094089",
+      appId: "1:902282094089:web:20f3874fd2393aa42f3ad8",
+      measurementId: "G-7HPT7Q512K"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const firestore = firebase.firestore();
+
+    const authContainer = document.getElementById('auth-container');
+    const projectList = document.getElementById('project-list');
+    const board = document.getElementById('board');
+    const logoutButton = document.getElementById('logout-button');
+    let activeProject = null;
+
+    // Check auth state
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        authContainer.style.display = 'none';
+        projectList.style.display = 'flex';
+        loadProjects();
+      } else {
+        authContainer.style.display = 'flex';
+        projectList.style.display = 'none';
+        board.style.display = 'none';
+      }
+    });
+
+    // Login
+    document.getElementById('login-button').addEventListener('click', () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          authContainer.style.display = 'none';
+          projectList.style.display = 'flex';
+          loadProjects();
+        })
+        .catch(error => {
+          console.error('Ошибка авторизации:', error);
+          alert('Неверный email или пароль');
         });
-      });
-  }
+    });
 
-  // Open project and load tasks
-  function openProject(projectId) {
-    activeProject = projectId;
+    // Logout
+    logoutButton.addEventListener('click', () => {
+      auth.signOut()
+        .then(() => {
+          authContainer.style.display = 'flex';
+          projectList.style.display = 'none';
+          board.style.display = 'none';
+        })
+        .catch(error => console.error('Ошибка выхода:', error));
+    });
 
-    firestore.collection('projects').doc(projectId).collection('tasks').get()
-      .then(snapshot => {
-        const tasks = { todo: [], 'in-progress': [], done: [] };
-        snapshot.forEach(doc => {
-          const task = doc.data();
-          tasks[task.status].push({ ...task, id: doc.id });
-        });
+    // Load projects
+    function loadProjects() {
+      projectList.innerHTML = '<button id="add-project-button">+</button>';
 
-        document.querySelectorAll('.column').forEach(column => {
-          const status = column.id;
-          const taskList = column.querySelector('.tasks');
-          taskList.innerHTML = '';
-          tasks[status].forEach(task => {
-            const taskElement = document.createElement('div');
-            taskElement.classList.add('task');
-            taskElement.setAttribute('draggable', 'true');
-            taskElement.setAttribute('data-task-id', task.id);  // Устанавливаем уникальный ID
-            taskElement.innerHTML = `
-              <span>${task.name}</span>
-              <button class="delete-task" onclick="deleteTask('${projectId}', '${task.id}')">X</button>
-            `;
-            taskElement.addEventListener('dragstart', dragStart);
-            taskList.appendChild(taskElement);
+      document.getElementById('add-project-button').addEventListener('click', addProject);
+
+      firestore.collection('projects').get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            const projectData = doc.data();
+            const projectId = doc.id;
+            const projectElement = document.createElement('div');
+            projectElement.classList.add('project');
+            projectElement.textContent = projectData.name;
+            projectElement.addEventListener('click', () => openProject(projectId));
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('delete-project');
+            deleteButton.textContent = 'X';
+            deleteButton.addEventListener('click', (event) => {
+              event.stopPropagation();
+              deleteProject(projectId);
+            });
+            projectElement.appendChild(deleteButton);
+            projectList.appendChild(projectElement);
           });
         });
-      });
-  }
-
-  // Dragstart handler
-  function dragStart(event) {
-    const taskId = event.target.getAttribute('data-task-id');
-    event.dataTransfer.setData('taskId', taskId);  // Сохраняем ID задачи
-  }
-
-  // Drop handler
-  function drop(event) {
-    event.preventDefault();
-    const taskId = event.dataTransfer.getData('taskId');
-    const targetStatus = event.target.closest('.column').id;
-    firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-      status: targetStatus
-    }).then(() => {
-      openProject(activeProject);  // Обновляем проект после перемещения задачи
-    });
-  }
-
-  // Allow drop handler
-  function allowDrop(event) {
-    event.preventDefault();
-  }
-
-  // Initialize drag-and-drop events
-  window.onload = () => {
-    document.querySelectorAll('.tasks').forEach(taskContainer => {
-      taskContainer.addEventListener('dragover', allowDrop);  // Разрешаем перетаскивание
-      taskContainer.addEventListener('drop', drop);  // Обрабатываем сброс задачи
-    });
-  };
-
-  // Delete task
-  function deleteTask(projectId, taskId) {
-    firestore.collection('projects').doc(projectId).collection('tasks').doc(taskId).delete()
-      .then(() => openProject(projectId))
-      .catch(error => console.error('Ошибка удаления задачи:', error));
-  }
-
-  // Add task
-  function addTask(status) {
-    const taskName = document.querySelector(`#${status} .task-input`).value.trim();
-    if (taskName && activeProject) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').add({
-        name: taskName,
-        status: status
-      })
-      .then(() => openProject(activeProject))
-      .catch(error => console.error('Ошибка добавления задачи:', error));
     }
-  }
 
-  // Handle task addition
-  document.getElementById('add-todo').addEventListener('click', () => addTask('todo'));
-  document.getElementById('add-in-progress').addEventListener('click', () => addTask('in-progress'));
-  document.getElementById('add-done').addEventListener('click', () => addTask('done'));
-</script>
+    // Add project
+    function addProject() {
+      const projectName = prompt('Введите название проекта');
+      if (projectName) {
+        firestore.collection('projects').add({
+          name: projectName
+        })
+        .then(() => loadProjects())
+        .catch(error => console.error('Ошибка добавления проекта:', error));
+      }
+    }
+
+    // Open project
+    function openProject(projectId) {
+      activeProject = projectId;
+      board.style.display = 'flex';
+
+      firestore.collection('projects').doc(projectId).collection('tasks').get()
+        .then(snapshot => {
+          const tasks = { todo: [], 'in-progress': [], done: [] };
+          snapshot.forEach(doc => {
+            const task = doc.data();
+            tasks[task.status].push({ ...task, id: doc.id });
+          });
+
+          document.querySelectorAll('.column').forEach(column => {
+            const status = column.id;
+            const taskList = column.querySelector('.tasks');
+            taskList.innerHTML = '';
+            tasks[status].forEach(task => {
+              const taskElement = document.createElement('div');
+              taskElement.classList.add('task');
+              taskElement.draggable = true;
+              taskElement.id = task.id; // Добавление уникального ID
+              taskElement.innerHTML = `
+                <span>${task.name}</span>
+                <button class="delete-task" onclick="deleteTask('${projectId}', '${task.id}')">X</button>
+              `;
+              taskElement.addEventListener('dragstart', drag);
+              taskList.appendChild(taskElement);
+            });
+          });
+        });
+    }
+
+    // Delete project
+    function deleteProject(projectId) {
+      firestore.collection('projects').doc(projectId).delete()
+        .then(() => loadProjects())
+        .catch(error => console.error('Ошибка удаления проекта:', error));
+    }
+
+    // Delete task
+    function deleteTask(projectId, taskId) {
+      firestore.collection('projects').doc(projectId).collection('tasks').doc(taskId).delete()
+        .then(() => openProject(projectId))
+        .catch(error => console.error('Ошибка удаления задачи:', error));
+    }
+
+    // Add task
+    function addTask(status) {
+      const taskName = document.querySelector(`#${status} .task-input`).value.trim();
+      if (taskName && activeProject) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').add({
+          name: taskName,
+          status: status
+        })
+        .then(() => openProject(activeProject))
+        .catch(error => console.error('Ошибка добавления задачи:', error));
+      }
+    }
+
+    // Drag events
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    function drag(event) {
+      event.dataTransfer.setData('taskId', event.target.id);
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      const taskId = event.dataTransfer.getData('taskId');
+      const status = event.target.closest('.column').id;
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+        status: status
+      }).then(() => {
+        openProject(activeProject);
+      });
+    }
+
+    // Handle task addition
+    document.getElementById('add-todo').addEventListener('click', () => addTask('todo'));
+    document.getElementById('add-in-progress').addEventListener('click', () => addTask('in-progress'));
+    document.getElementById('add-done').addEventListener('click', () => addTask('done'));
+
+    // Prevent reset after drag-and-drop
+    window.onload = () => {
+      document.querySelectorAll('.tasks').forEach(container => {
+        container.ondrop = drop;
+        container.ondragover = allowDrop;
+      });
+    };
+  </script>
+</body>
+</html>
