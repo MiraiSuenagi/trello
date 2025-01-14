@@ -387,6 +387,41 @@
       });
       document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
+
+    // Create task element
+    function createTaskElement(taskId, taskName, column, assignee) {
+      const taskElement = document.createElement('div');
+      taskElement.className = 'task';
+      taskElement.setAttribute('data-id', taskId);
+
+      const taskNameElement = document.createElement('span');
+      taskNameElement.textContent = taskName;
+      taskElement.appendChild(taskNameElement);
+
+      const assigneeElement = document.createElement('span');
+      assigneeElement.textContent = `Assigned to: ${assignee || 'None'}`;
+      taskElement.appendChild(assigneeElement);
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'delete-task';
+      deleteButton.textContent = 'Удалить';
+      deleteButton.addEventListener('click', () => deleteTask(taskId, column));
+
+      taskElement.appendChild(deleteButton);
+
+      return taskElement;
+    }
+
+    // Delete task
+    function deleteTask(taskId, column) {
+      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
+        .then(() => {
+          const taskContainer = document.getElementById(column).querySelector('.tasks');
+          const taskElement = document.querySelector(`[data-id="${taskId}"]`);
+          taskContainer.removeChild(taskElement);
+        })
+        .catch(error => console.error('Ошибка удаления задачи:', error));
+    }
   </script>
 </body>
 </html>
