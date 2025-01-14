@@ -80,6 +80,8 @@
       padding: 20px;
       max-width: 1200px;
       width: 100%;
+      display: flex;
+      justify-content: space-between;
     }
     .column {
       background: #ebecf0;
@@ -103,6 +105,9 @@
       border-radius: 6px;
       min-height: 300px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .task {
       background: #ffffff;
@@ -179,29 +184,29 @@
   </div>
 
   <div id="board">
-    <div class="column" id="todo">
+    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="todo-tasks"></div>
     </div>
-    <div class="column" id="in-progress">
+    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="in-progress-tasks"></div>
     </div>
-    <div class="column" id="done">
+    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
         <button class="add-button">Добавить</button>
       </div>
-      <div class="tasks"></div>
+      <div class="tasks" id="done-tasks"></div>
     </div>
   </div>
 
@@ -328,7 +333,7 @@
           snapshot.forEach(doc => {
             const task = doc.data();
             const taskElement = createTaskElement(doc.id, task.name, task.column);
-            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
+            document.getElementById(task.column + '-tasks').appendChild(taskElement);
           });
         });
     }
@@ -338,18 +343,16 @@
       task.className = 'task';
       task.textContent = taskText;
       task.draggable = true;
+      task.setAttribute('data-task-id', taskId);
 
-      task.addEventListener('dragstart', () => {
-        task.classList.add('dragging');
+      task.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('taskId', taskId);
       });
 
-      task.addEventListener('dragend', () => {
-        task.classList.remove('dragging');
-        const newColumn = task.closest('.column').id;
-        updateTaskColumn(taskId, newColumn);
+      task.addEventListener('dragend', (e) => {
+        e.target.style.background = '#ffffff';
       });
 
-      // Если задача находится в столбце "Done", добавляем кнопку удаления
       if (column === 'done') {
         const deleteButton = document.createElement('button');
         deleteButton.className = 'delete-task';
@@ -365,6 +368,24 @@
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    function drop(event) {
+      event.preventDefault();
+      const taskId = event.dataTransfer.getData('taskId');
+      const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+      const newColumn = event.target.closest('.column').id;
+
+      if (newColumn && taskElement) {
+        const currentColumn = taskElement.closest('.column').id;
+        if (newColumn !== currentColumn) {
+          updateTaskColumn(taskId, newColumn);
+        }
+      }
     }
 
     function updateTaskColumn(taskId, column) {
