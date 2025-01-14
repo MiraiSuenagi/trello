@@ -41,11 +41,10 @@
       background: #005a8c;
     }
     #project-list {
-      display: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 20px;
+      display: flex;
+      flex-direction: column; /* Changed to vertical layout */
+      align-items: flex-start; /* Left align the projects */
+      margin-top: 20px;
     }
     .project {
       background: #ffffff;
@@ -58,6 +57,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 10px;
     }
     .project:hover {
       background: #f0f0f0;
@@ -140,6 +140,12 @@
       border: 1px solid #ccc;
       border-radius: 4px;
     }
+    .responsible-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
     .add-button {
       padding: 8px 12px;
       background: #5aac44;
@@ -165,6 +171,23 @@
     #logout-button:hover {
       background: #c9302c;
     }
+    #add-project-button {
+      background: #5aac44; /* Green color */
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+    }
+    #add-project-button:hover {
+      background: #519839;
+    }
   </style>
 </head>
 <body>
@@ -175,7 +198,7 @@
   </div>
 
   <div id="project-list">
-    <button id="add-project-button">Добавить проект</button>
+    <button id="add-project-button">+</button>
   </div>
 
   <div id="board">
@@ -183,6 +206,7 @@
       <h3>To Do</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -191,6 +215,7 @@
       <h3>In Progress</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -199,6 +224,7 @@
       <h3>Done</h3>
       <div class="add-task-container">
         <input type="text" class="task-input" placeholder="Новая задача">
+        <input type="email" class="responsible-input" placeholder="Email ответственного">
         <button class="add-button">Добавить</button>
       </div>
       <div class="tasks"></div>
@@ -276,7 +302,7 @@
 
     // Load projects
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+      projectList.innerHTML = '<button id="add-project-button">+</button>';
 
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
@@ -379,14 +405,18 @@
     // Add task
     document.querySelectorAll('.add-button').forEach((button, index) => {
       button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
+        const taskInput = button.previousElementSibling.previousElementSibling;
+        const responsibleInput = button.previousElementSibling;
         const taskText = taskInput.value.trim();
-        if (taskText && activeProject) {
+        const responsibleEmail = responsibleInput.value.trim();
+        if (taskText && responsibleEmail && activeProject) {
           firestore.collection('projects').doc(activeProject).collection('tasks').add({
             name: taskText,
-            column: ['todo', 'in-progress', 'done'][index]
+            column: ['todo', 'in-progress', 'done'][index],
+            responsible: responsibleEmail
           }).then(() => {
             taskInput.value = '';
+            responsibleInput.value = '';
             openProject(activeProject);
           });
         }
