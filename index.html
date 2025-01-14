@@ -516,6 +516,55 @@ document.addEventListener('dragend', e => {
       .catch(error => console.error('Ошибка обновления колонки:', error));
   }
 });
+document.querySelectorAll('.task').forEach((task) => {
+  // Установим атрибут для перетаскивания
+  task.setAttribute('draggable', true);
+
+  // Начало перетаскивания
+  task.addEventListener('dragstart', (event) => {
+    event.dataTransfer.setData('text/plain', event.target.dataset.id);
+    event.target.classList.add('dragging');
+  });
+
+  // Окончание перетаскивания
+  task.addEventListener('dragend', (event) => {
+    event.target.classList.remove('dragging');
+  });
+});
+
+// Обработчик для контейнеров задач
+document.querySelectorAll('.task-container').forEach((container) => {
+  container.addEventListener('dragover', (event) => {
+    event.preventDefault(); // Позволяет сбрасывать
+    const draggingTask = document.querySelector('.dragging');
+    const afterElement = getDragAfterElement(container, event.clientY);
+    if (afterElement == null) {
+      container.appendChild(draggingTask);
+    } else {
+      container.insertBefore(draggingTask, afterElement);
+    }
+  });
+});
+
+// Помощник для определения позиции
+function getDragAfterElement(container, y) {
+  const draggableElements = [
+    ...container.querySelectorAll('.task:not(.dragging)')
+  ];
+
+  return draggableElements.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    },
+    { offset: Number.NEGATIVE_INFINITY }
+  ).element;
+}
 
   </script>
 </body>
