@@ -211,7 +211,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
       authDomain: "trellokz123.firebaseapp.com",
@@ -233,7 +232,6 @@
 
     let activeProject = null;
 
-    // Check auth state
     auth.onAuthStateChanged(user => {
       if (user) {
         authContainer.style.display = 'none';
@@ -246,7 +244,6 @@
       }
     });
 
-    // Login
     document.getElementById('login-button').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
@@ -263,7 +260,6 @@
         });
     });
 
-    // Logout
     logoutButton.addEventListener('click', () => {
       auth.signOut()
         .then(() => {
@@ -274,7 +270,6 @@
         .catch(error => console.error('Ошибка выхода:', error));
     });
 
-    // Load projects
     function loadProjects() {
       projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
 
@@ -303,7 +298,6 @@
         });
     }
 
-    // Add project with unique name check
     function addProject() {
       const projectName = prompt('Введите имя нового проекта:');
       if (!projectName) return;
@@ -319,13 +313,11 @@
         });
     }
 
-    // Delete project
     function deleteProject(projectId) {
       firestore.collection('projects').doc(projectId).delete()
         .then(() => loadProjects());
     }
 
-    // Open project
     function openProject(projectId) {
       activeProject = projectId;
       board.style.display = 'flex';
@@ -341,13 +333,11 @@
         });
     }
 
-    // Create task element
     function createTaskElement(taskId, taskText, column) {
       const task = document.createElement('div');
       task.className = 'task';
       task.textContent = taskText;
       task.draggable = true;
-      task.dataset.taskId = taskId;
 
       task.addEventListener('dragstart', () => {
         task.classList.add('dragging');
@@ -368,62 +358,41 @@
       return task;
     }
 
-    // Delete task
+    document.querySelectorAll('.tasks').forEach(container => {
+      container.addEventListener('dragover', event => {
+        event.preventDefault();
+        const draggingTask = document.querySelector('.task.dragging');
+        container.appendChild(draggingTask);
+      });
+    });
+
+    document.querySelectorAll('.add-button').forEach((button, index) => {
+      button.addEventListener('click', () => {
+        const taskInput = button.previousElementSibling;
+        const taskText = taskInput.value.trim();
+        if (taskText && activeProject) {
+          const columnId = ['todo', 'in-progress', 'done'][index];
+          firestore.collection('projects').doc(activeProject).collection('tasks').add({
+            name: taskText,
+            column: columnId
+          }).then(() => {
+            taskInput.value = '';
+            openProject(activeProject);
+          });
+        }
+      });
+    });
+
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => openProject(activeProject));
     }
 
-    // Update task column
     function updateTaskColumn(taskId, column) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-        column: column
+        column
       }).then(() => openProject(activeProject));
     }
-
-    
-// Add task to a column
-document.querySelectorAll('.add-button').forEach(button => {
-  button.addEventListener('click', (event) => {
-    const input = event.target.previousElementSibling;
-    const taskText = input.value.trim();
-    if (!taskText) return;
-
-    const column = event.target.closest('.column');
-    
-    // Проверка наличия элемента column
-    if (!column) return;
-
-    const columnId = column.id;
-
-    firestore.collection('projects').doc(activeProject).collection('tasks').add({
-      name: taskText,
-      column: columnId
-    }).then(() => openProject(activeProject));
-
-    input.value = '';
-  });
-});
-
-
-    // Enable dragging and dropping tasks between columns
-    document.querySelectorAll('.column').forEach(column => {
-      column.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        const draggingTask = document.querySelector('.task.dragging');
-        if (draggingTask && !column.contains(draggingTask)) {
-          column.querySelector('.tasks').appendChild(draggingTask);
-        }
-      });
-
-      column.addEventListener('drop', (event) => {
-        const taskId = event.target.closest('.task')?.dataset.taskId;
-        if (taskId) {
-          const newColumn = column.id;
-          updateTaskColumn(taskId, newColumn);
-        }
-      });
-    });
   </script>
 </body>
 </html>
