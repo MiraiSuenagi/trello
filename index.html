@@ -11,41 +11,24 @@
       padding: 0;
       background-color: #f4f5f7;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       min-height: 100vh;
+      align-items: flex-start;
+      flex-direction: row;
     }
-    #auth-container {
+    #main-container {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 50px;
-    }
-    #auth-container input {
-      margin: 5px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 300px;
-    }
-    #auth-container button {
-      padding: 10px 20px;
-      background: #0079bf;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #auth-container button:hover {
-      background: #005a8c;
+      flex-direction: row;
+      width: 80%;
+      height: 100vh;
     }
     #project-list {
-      display: none;
-      flex-direction: row;
-      flex-wrap: wrap;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 200px;
       gap: 10px;
-      margin: 20px;
+      margin-right: 20px;
     }
     .project {
       background: #ffffff;
@@ -69,17 +52,18 @@
       border-radius: 5px;
       padding: 5px;
       cursor: pointer;
-      margin-left: 10px;
     }
     .delete-project:hover {
       background: #c9302c;
     }
     #board {
+      flex-grow: 1;
       display: none;
       gap: 20px;
       padding: 20px;
       max-width: 1200px;
       width: 100%;
+      overflow: auto;
     }
     .column {
       background: #ebecf0;
@@ -124,7 +108,6 @@
       padding: 5px;
       cursor: pointer;
       margin-left: 10px;
-      margin-top: 5px;
     }
     .delete-task:hover {
       background: #c9302c;
@@ -165,43 +148,57 @@
     #logout-button:hover {
       background: #c9302c;
     }
+    #add-project-button {
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 30px;
+      text-align: center;
+      line-height: 36px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #add-project-button:hover {
+      background: #519839;
+    }
   </style>
 </head>
 <body>
-  <div id="auth-container">
-    <input type="email" id="email" placeholder="Введите email">
-    <input type="password" id="password" placeholder="Введите пароль">
-    <button id="login-button">Войти</button>
-  </div>
-
-  <div id="project-list">
-    <button id="add-project-button">Добавить проект</button>
-  </div>
-
-  <div id="board">
-    <div class="column" id="todo">
-      <h3>To Do</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks"></div>
+  <div id="main-container">
+    <div id="project-list">
+      <button id="add-project-button">+</button>
     </div>
-    <div class="column" id="in-progress">
-      <h3>In Progress</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+
+    <div id="board">
+      <div class="column" id="todo">
+        <h3>To Do</h3>
+        <div class="add-task-container">
+          <input type="text" class="task-input" placeholder="Новая задача">
+          <button class="add-button">Добавить</button>
+        </div>
+        <div class="tasks"></div>
       </div>
-      <div class="tasks"></div>
-    </div>
-    <div class="column" id="done">
-      <h3>Done</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
+      <div class="column" id="in-progress">
+        <h3>In Progress</h3>
+        <div class="add-task-container">
+          <input type="text" class="task-input" placeholder="Новая задача">
+          <button class="add-button">Добавить</button>
+        </div>
+        <div class="tasks"></div>
       </div>
-      <div class="tasks"></div>
+      <div class="column" id="done">
+        <h3>Done</h3>
+        <div class="add-task-container">
+          <input type="text" class="task-input" placeholder="Новая задача">
+          <button class="add-button">Добавить</button>
+        </div>
+        <div class="tasks"></div>
+      </div>
     </div>
   </div>
 
@@ -271,7 +268,7 @@
     });
 
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+      projectList.innerHTML = '<button id="add-project-button">+</button>';
 
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
