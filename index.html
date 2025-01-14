@@ -98,7 +98,7 @@
       padding: 20px;
       max-width: 1200px;
       width: 100%;
-      margin-left: 400px; /* увеличиваем сдвиг */
+      margin-left: 360px;
     }
     .column {
       background: #ebecf0;
@@ -198,6 +198,13 @@
     .assign-button:hover {
       background: #0056b3;
     }
+    #user-info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 16px;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +212,10 @@
     <input type="email" id="email" placeholder="Введите email">
     <input type="password" id="password" placeholder="Введите пароль">
     <button id="login-button">Войти</button>
+  </div>
+
+  <div id="user-info">
+    <span id="user-email">Учетная запись: </span>
   </div>
 
   <div id="project-list">
@@ -268,11 +279,15 @@
 
     // Check auth state
     auth.onAuthStateChanged(user => {
+      const userEmailElement = document.getElementById('user-email');
       if (user) {
+        // Показываем email авторизованного пользователя
+        userEmailElement.textContent = `Учетная запись: ${user.email}`;
         authContainer.style.display = 'none';
         projectList.style.display = 'flex';
         loadProjects();
       } else {
+        userEmailElement.textContent = 'Учетная запись: не авторизован';
         authContainer.style.display = 'flex';
         projectList.style.display = 'none';
         board.style.display = 'none';
@@ -303,162 +318,78 @@
           authContainer.style.display = 'flex';
           projectList.style.display = 'none';
           board.style.display = 'none';
-        })
-        .catch(error => console.error('Ошибка выхода:', error));
+        });
     });
 
     // Load projects
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">+</button>';
-
-      document.getElementById('add-project-button').addEventListener('click', addProject);
-
       firestore.collection('projects').get()
         .then(snapshot => {
           snapshot.forEach(doc => {
-            const project = doc.data();
+            const projectData = doc.data();
             const projectElement = document.createElement('div');
-            projectElement.className = 'project';
-            projectElement.setAttribute('data-id', doc.id);
-
-            const projectName = document.createElement('span');
-            projectName.textContent = project.name;
-            projectName.addEventListener('click', () => openProject(doc.id));
+            projectElement.classList.add('project');
+            projectElement.textContent = projectData.name;
+            projectElement.addEventListener('click', () => {
+              activeProject = doc.id;
+              loadBoard(activeProject);
+            });
 
             const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-project';
+            deleteButton.classList.add('delete-project');
             deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteProject(doc.id));
+            deleteButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              deleteProject(doc.id);
+            });
 
-            projectElement.appendChild(projectName);
             projectElement.appendChild(deleteButton);
             projectList.appendChild(projectElement);
           });
         });
     }
 
-    // Add project with unique name check
-    // Add project with unique name check
-function addProject() {
-  const projectName = prompt('Введите название проекта:');
-  if (projectName) {
-    firestore.collection('projects').where('name', '==', projectName).get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          firestore.collection('projects').add({
-            name: projectName
-          }).then(docRef => {
-            loadProjects(); // Обновляем список проектов
-            openProject(docRef.id); // Открываем только что добавленный проект
-          });
-        } else {
-          alert('Проект с таким названием уже существует');
-        }
-      });
-  }
-}
-
-
     // Delete project
     function deleteProject(projectId) {
-      if (confirm('Вы уверены, что хотите удалить этот проект?')) {
-        firestore.collection('projects').doc(projectId).delete()
-          .then(() => {
-            loadProjects();
-            board.style.display = 'none';
-          })
-          .catch(error => console.error('Ошибка удаления проекта:', error));
-      }
+      firestore.collection('projects').doc(projectId).delete()
+        .then(() => {
+          loadProjects();
+        });
     }
 
-    // Open project
-    function openProject(projectId) {
-      activeProject = projectId;
+    // Load board
+    function loadBoard(projectId) {
       board.style.display = 'flex';
-
       firestore.collection('projects').doc(projectId).collection('tasks').get()
         .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
-            const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
-            document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
+            const taskData = doc.data();
+            const taskElement = document.createElement('div');
+            taskElement.classList.add('task');
+            taskElement.textContent = taskData.name;
+
+            const deleteTaskButton = document.createElement('button');
+            deleteTaskButton.classList.add('delete-task');
+            deleteTaskButton.textContent = 'Удалить';
+            deleteTaskButton.addEventListener('click', (e) => {
+              e.stopPropagation();
+              deleteTask(doc.id);
+            });
+
+            taskElement.appendChild(deleteTaskButton);
+
+            document.querySelector(`#${taskData.status} .tasks`).appendChild(taskElement);
           });
         });
-
-      // Подсвечиваем активный проект
-      document.querySelectorAll('.project').forEach(projectElement => {
-        projectElement.classList.remove('active-project');
-      });
-      document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
-    }
-
-    // Create task element
-    function createTaskElement(taskId, taskName, column, assignee) {
-      const taskElement = document.createElement('div');
-      taskElement.className = 'task';
-      taskElement.setAttribute('data-id', taskId);
-
-      const taskText = document.createElement('span');
-      taskText.textContent = taskName;
-
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'delete-task';
-      deleteButton.textContent = 'Удалить';
-      deleteButton.addEventListener('click', () => deleteTask(taskId));
-
-      const assignButton = document.createElement('button');
-      assignButton.className = 'assign-button';
-      assignButton.textContent = assignee || 'Назначить';
-      assignButton.addEventListener('click', () => assignTask(taskId));
-
-      taskElement.appendChild(taskText);
-      taskElement.appendChild(assignButton);
-      taskElement.appendChild(deleteButton);
-
-      return taskElement;
     }
 
     // Delete task
     function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
+      firestore.collection('tasks').doc(taskId).delete()
         .then(() => {
-          document.querySelector(`[data-id="${taskId}"]`).remove();
+          loadBoard(activeProject);
         });
     }
-
-    // Assign task
-    function assignTask(taskId) {
-      const assignee = prompt('Введите имя исполнителя:');
-      if (assignee) {
-        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
-          assignee: assignee
-        }).then(() => {
-          loadProjects(); // To refresh the list
-        });
-      }
-    }
-
-    // Add task
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const taskInput = button.previousElementSibling;
-        const taskText = taskInput.value.trim();
-        if (taskText && activeProject) {
-          const taskColumn = button.closest('.column').id;
-
-          firestore.collection('projects').doc(activeProject).collection('tasks').add({
-            name: taskText,
-            column: taskColumn
-          }).then(docRef => {
-            // Создаем задачу сразу в интерфейсе
-            const taskElement = createTaskElement(docRef.id, taskText, taskColumn, '');
-            document.getElementById(taskColumn).querySelector('.tasks').appendChild(taskElement);
-            taskInput.value = ''; // Очищаем поле ввода
-          });
-        }
-      });
-    });
   </script>
 </body>
 </html>
