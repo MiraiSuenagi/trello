@@ -387,7 +387,7 @@
       document.querySelectorAll('.project').forEach(projectElement => {
         projectElement.classList.remove('active-project');
       });
-      document.querySelector([data-id="${projectId}"]).classList.add('active-project');
+      document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
 
     // Create task element
@@ -420,7 +420,7 @@
     function deleteTask(taskId) {
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
         .then(() => {
-          document.querySelector([data-id="${taskId}"]).remove();
+          document.querySelector(`[data-id="${taskId}"]`).remove();
         });
     }
 
