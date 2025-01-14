@@ -43,12 +43,10 @@
     #project-list {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      margin: 0;
-      position: fixed;
-      left: 20px;
-      bottom: 20px;
       gap: 10px;
+      position: absolute;
+      top: 50px;
+      left: 20px;
     }
     .project {
       background: #ffffff;
@@ -76,6 +74,23 @@
     }
     .delete-project:hover {
       background: #c9302c;
+    }
+    #add-project-button {
+      padding: 10px;
+      background: #5aac44;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    #add-project-button:hover {
+      background: #519839;
     }
     #board {
       display: none;
@@ -168,6 +183,9 @@
     #logout-button:hover {
       background: #c9302c;
     }
+    .active-project {
+      background: #cce5ff;
+    }
   </style>
 </head>
 <body>
@@ -178,7 +196,7 @@
   </div>
 
   <div id="project-list">
-    <button id="add-project-button">Добавить проект</button>
+    <button id="add-project-button">+</button>
   </div>
 
   <div id="board">
@@ -279,7 +297,7 @@
 
     // Load projects
     function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
+      projectList.innerHTML = '<button id="add-project-button">+</button>';
 
       document.getElementById('add-project-button').addEventListener('click', addProject);
 
@@ -338,17 +356,22 @@
           document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
           snapshot.forEach(doc => {
             const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column);
+            const taskElement = createTaskElement(doc.id, task.name, task.column, task.assignee);
             document.getElementById(task.column).querySelector('.tasks').appendChild(taskElement);
           });
         });
+
+      document.querySelectorAll('.project').forEach(projectElement => {
+        projectElement.classList.remove('active-project');
+      });
+      document.querySelector(`[data-id="${projectId}"]`).classList.add('active-project');
     }
 
     // Create task element
-    function createTaskElement(taskId, taskText, column) {
+    function createTaskElement(taskId, taskText, column, assignee) {
       const task = document.createElement('div');
       task.className = 'task';
-      task.textContent = taskText;
+      task.textContent = `${taskText} - ${assignee ? assignee : 'Нет исполнителя'}`;
       task.draggable = true;
 
       task.addEventListener('dragstart', () => {
@@ -407,6 +430,16 @@
       firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
         column
       }).then(() => openProject(activeProject));
+    }
+
+    // Add assignee to task
+    function addAssignee(taskId) {
+      const assigneeEmail = prompt('Введите email исполнителя');
+      if (assigneeEmail) {
+        firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({
+          assignee: assigneeEmail
+        }).then(() => openProject(activeProject));
+      }
     }
   </script>
 </body>
