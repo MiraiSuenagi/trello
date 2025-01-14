@@ -263,9 +263,11 @@
 
     // Check auth state
     auth.onAuthStateChanged(user => {
+      console.log('User state changed:', user); // Debugging message
       if (user) {
         authContainer.style.display = 'none';
         projectList.style.display = 'flex';
+        board.style.display = 'flex'; // Ensure the board is displayed after login
         loadPrograms();
       } else {
         authContainer.style.display = 'flex';
@@ -283,6 +285,7 @@
         .then(() => {
           authContainer.style.display = 'none';
           projectList.style.display = 'flex';
+          board.style.display = 'flex'; // Show the board after login
           loadPrograms();
         })
         .catch(error => {
@@ -304,6 +307,7 @@
 
     // Load programs
     function loadPrograms() {
+      console.log('Loading programs...');
       projectList.innerHTML = '';
       firestore.collection('programs').get()
         .then(snapshot => {
