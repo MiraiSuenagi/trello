@@ -1,424 +1,1170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Management System</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f5f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    #auth-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 50px;
-    }
-    #auth-container input {
-      margin: 5px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 300px;
-    }
-    #auth-container button {
-      padding: 10px 20px;
-      background: #0079bf;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #auth-container button:hover {
-      background: #005a8c;
-    }
-    #project-list {
-      display: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 20px;
-    }
-    .project {
-      background: #ffffff;
-      color: #333;
-      padding: 10px 20px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .project:hover {
-      background: #f0f0f0;
-    }
-    .delete-project {
-      background: #d9534f;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-    .delete-project:hover {
-      background: #c9302c;
-    }
-    #board {
-      display: none;
-      gap: 20px;
-      padding: 20px;
-      max-width: 1200px;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-    }
-    .column {
-      background: #ebecf0;
-      border-radius: 8px;
-      padding: 10px;
-      width: 300px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    .column h3 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      color: #333;
-      text-align: center;
-    }
-    .tasks {
-      flex-grow: 1;
-      padding: 10px;
-      background: #f4f5f7;
-      border-radius: 6px;
-      min-height: 300px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .task {
-      background: #ffffff;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      cursor: grab;
-      transition: background 0.2s;
-    }
-    .task:hover {
-      background: #f0f8ff;
-    }
-    .delete-task {
-      background: #d9534f;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 5px;
-      cursor: pointer;
-      margin-left: 10px;
-      margin-top: 5px;
-    }
-    .delete-task:hover {
-      background: #c9302c;
-    }
-    .add-task-container {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .task-input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .add-button {
-      padding: 8px 12px;
-      background: #5aac44;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .add-button:hover {
-      background: #519839;
-    }
-    #logout-button {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      padding: 10px 20px;
-      background: #d9534f;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #logout-button:hover {
-      background: #c9302c;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полноценная копия Trello</title>
+    <style>
+        :root {
+            --primary-color: #026aa7;
+            --secondary-color: #0079bf;
+            --background-color: #f0f2f5;
+            --list-bg-color: #ebecf0;
+            --card-bg-color: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .navbar {
+            display: flex;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            align-items: center;
+            height: 40px;
+        }
+
+        .navbar-brand {
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 16px;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 16px;
+        }
+
+        .navbar-item {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+
+        .navbar-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-search {
+            margin-left: auto;
+            padding: 4px 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-search input {
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            width: 180px;
+        }
+
+        .navbar-search input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .board-header {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: white;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 48px;
+        }
+
+        .board-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .board-menu {
+            display: flex;
+            gap: 8px;
+        }
+
+        .board-button {
+            padding: 6px 12px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .board-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .board-content {
+            height: calc(100vh - 88px);
+            padding: 16px;
+            display: flex;
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        .list-wrapper {
+            width: 272px;
+            min-width: 272px;
+            margin-right: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list {
+            background-color: var(--list-bg-color);
+            border-radius: 3px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+
+        .list-header {
+            padding: 8px 4px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-title {
+            cursor: pointer;
+            padding: 4px;
+            flex-grow: 1;
+        }
+
+        .list-title:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        .list-title-edit {
+            display: none;
+            width: 100%;
+            padding: 4px;
+            border: none;
+            border-radius: 3px;
+            box-shadow: inset 0 0 0 2px var(--secondary-color);
+            outline: none;
+        }
+
+        .list-menu {
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .list-menu:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .list-cards {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 10px;
+            margin: 0 4px;
+        }
+
+        .card {
+            background-color: var(--card-bg-color);
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card:hover {
+            background-color: #f7f9fa;
+        }
+
+        .card-labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .card-label {
+            height: 8px;
+            width: 40px;
+            border-radius: 4px;
+        }
+
+        .label-green { background-color: #61bd4f; }
+        .label-yellow { background-color: #f2d600; }
+        .label-orange { background-color: #ff9f1a; }
+        .label-red { background-color: #eb5a46; }
+        .label-purple { background-color: #c377e0; }
+        .label-blue { background-color: #0079bf; }
+
+        .card-title {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .card-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #5e6c84;
+            margin-top: 4px;
+        }
+
+        .card-badge {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .add-card, .add-list {
+            padding: 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #5e6c84;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .add-card:hover, .add-list:hover {
+            background-color: rgba(9, 30, 66, 0.08);
+            color: #172b4d;
+        }
+
+        .add-list-wrapper {
+            background-color: rgba(255, 255, 255, 0.24);
+            width: 272px;
+            min-width: 272px;
+            border-radius: 3px;
+            height: fit-content;
+            padding: 4px;
+            margin-right: 8px;
+        }
+
+        .card-composer, .list-composer {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .card-composer textarea, .list-composer input {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+            margin-bottom: 8px;
+            resize: none;
+            outline: none;
+        }
+
+        .composer-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .add-button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .add-button:hover {
+            background-color: var(--primary-color);
+        }
+
+        .cancel-button {
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .cancel-button:hover {
+            background-color: rgba(9, 30, 66, 0.08);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 48px;
+        }
+
+        .modal-card {
+            background-color: #f4f5f7;
+            border-radius: 3px;
+            width: 768px;
+            max-width: 95%;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 96px);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(9, 30, 66, 0.08);
+        }
+
+        .modal-title {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .modal-title-input {
+            width: 100%;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px;
+            border: none;
+            border-radius: 3px;
+            background-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .modal-title-input:focus {
+            background-color: white;
+            box-shadow: inset 0 0 0 2px var(--secondary-color);
+            outline: none;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #5e6c84;
+            margin-bottom: 8px;
+        }
+
+        .modal-content {
+            display: flex;
+            padding: 0 16px 16px;
+            overflow: auto;
+        }
+
+        .modal-main {
+            flex: 1;
+            margin-right: 16px;
+        }
+
+        .modal-sidebar {
+            width: 200px;
+        }
+
+        .modal-section {
+            margin-bottom: 24px;
+        }
+
+        .modal-section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .modal-description {
+            padding: 8px;
+            min-height: 100px;
+            background-color: white;
+            border-radius: 3px;
+            box-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+            cursor: pointer;
+        }
+
+        .modal-description:hover {
+            background-color: #ebecf0;
+        }
+
+        .modal-description-edit {
+            display: none;
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            border: none;
+            border-radius: 3px;
+            box-shadow: inset 0 0 0 2px var(--secondary-color);
+            resize: vertical;
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        .sidebar-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #172b4d;
+            background-color: #ebecf0;
+        }
+
+        .sidebar-button:hover {
+            background-color: #dfe1e6;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+
+        .drop-indicator {
+            height: 2px;
+            background-color: var(--secondary-color);
+            margin: 4px 0;
+            display: none;
+        }
+
+        /* Стили для формы авторизации */
+        #auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 16px;
+        }
+
+        #auth-container input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        #auth-container button {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #auth-container button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        /* Скрываем контент доски по умолчанию */
+        .navbar, .board-header, .board-content {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <div id="auth-container">
-    <input type="email" id="email" placeholder="Введите email">
-    <input type="password" id="password" placeholder="Введите пароль">
-    <button id="login-button">Войти</button>
-  </div>
-
-  <div id="project-list">
-    <button id="add-project-button">Добавить проект</button>
-  </div>
-
-  <div id="board">
-    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
-      <h3>To Do</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks" id="todo-tasks"></div>
+    <!-- Форма авторизации -->
+    <div id="auth-container">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="sign-in">Sign In</button>
+        <button id="sign-up">Sign Up</button>
     </div>
-    <div class="column" id="in-progress" ondrop="drop(event)" ondragover="allowDrop(event)">
-      <h3>In Progress</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks" id="in-progress-tasks"></div>
+
+    <!-- Верхняя панель навигации -->
+    <div class="navbar">
+        <div class="navbar-brand">Trello Clone</div>
+        <div class="navbar-menu">
+            <div class="navbar-item">Доски</div>
+            <div class="navbar-item">Создать</div>
+        </div>
+        <div class="navbar-search">
+            <input type="text" placeholder="Поиск...">
+        </div>
+        <button id="sign-out">Sign Out</button>
     </div>
-    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
-      <h3>Done</h3>
-      <div class="add-task-container">
-        <input type="text" class="task-input" placeholder="Новая задача">
-        <button class="add-button">Добавить</button>
-      </div>
-      <div class="tasks" id="done-tasks"></div>
+
+    <!-- Заголовок доски -->
+    <div class="board-header">
+        <div class="board-title" contenteditable="true">Моя доска</div>
+        <div class="board-menu">
+            <div class="board-button">
+                <span class="icon">⭐</span>
+                <span>Избранное</span>
+            </div>
+            <div class="board-button">
+                <span class="icon">👥</span>
+                <span>Поделиться</span>
+            </div>
+            <div class="board-button">
+                <span class="icon">⚙️</span>
+                <span>Настройки</span>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <button id="logout-button">Выйти</button>
+    <!-- Содержимое доски -->
+    <div class="board-content" id="boardContent">
+        <div class="add-list-wrapper">
+            <div class="add-list" id="addListButton">
+                <span class="icon">+</span>
+                <span>Добавить еще один список</span>
+            </div>
+            <div class="list-composer" id="listComposer">
+                <input type="text" placeholder="Введите название списка...">
+                <div class="composer-buttons">
+                    <button class="add-button" id="submitListButton">Добавить список</button>
+                    <div class="cancel-button" id="cancelListButton">✕</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBA2vfGRmzy2ISbYSCWL4uocBNtXkaG33Y",
-      authDomain: "trellokz123.firebaseapp.com",
-      projectId: "trellokz123",
-      storageBucket: "trellokz123.appspot.com",
-      messagingSenderId: "902282094089",
-      appId: "1:902282094089:web:20f3874fd2393aa42f3ad8",
-      measurementId: "G-7HPT7Q512K"
-    };
+    <!-- Модальное окно карточки -->
+    <div class="modal-overlay" id="cardModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <input type="text" class="modal-title-input" id="modalCardTitle" placeholder="Название карточки">
+                    <div class="modal-subtitle">в списке <span id="modalListName">Название списка</span></div>
+                </div>
+                <div class="modal-close" id="closeCardModal">✕</div>
+            </div>
+            <div class="modal-content">
+                <div class="modal-main">
+                    <div class="modal-section">
+                        <div class="modal-section-title">Описание</div>
+                        <div class="modal-description" id="modalDescription">Добавить более подробное описание...</div>
+                        <textarea class="modal-description-edit" id="modalDescriptionEdit" placeholder="Добавить более подробное описание..."></textarea>
+                    </div>
+                    <div class="modal-section">
+                        <div class="modal-section-title">Комментарии</div>
+                        <div id="commentSection">
+                            <!-- Комментарии будут здесь -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-sidebar">
+                    <div class="sidebar-buttons">
+                        <div class="sidebar-button">
+                            <span class="icon">🏷️</span>
+                            <span>Метки</span>
+                        </div>
+                        <div class="sidebar-button">
+                            <span class="icon">👥</span>
+                            <span>Участники</span>
+                        </div>
+                        <div class="sidebar-button">
+                            <span class="icon">📎</span>
+                            <span>Вложение</span>
+                        </div>
+                        <div class="sidebar-button">
+                            <span class="icon">📋</span>
+                            <span>Чек-лист</span>
+                        </div>
+                        <div class="sidebar-button">
+                            <span class="icon">📅</span>
+                            <span>Дата</span>
+                        </div>
+                        <div class="sidebar-button">
+                            <span class="icon">🗑️</span>
+                            <span>Архивировать</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const firestore = firebase.firestore();
+    <!-- Шаблоны для JavaScript -->
+    <template id="listTemplate">
+        <div class="list-wrapper" data-list-id="">
+            <div class="list">
+                <div class="list-header">
+                    <div class="list-title"></div>
+                    <input type="text" class="list-title-edit">
+                    <div class="list-menu">⋮</div>
+                </div>
+                <div class="list-cards"></div>
+                <div class="add-card">
+                    <span class="icon">+</span>
+                    <span>Добавить карточку</span>
+                </div>
+                <div class="card-composer">
+                    <textarea placeholder="Введите название карточки..."></textarea>
+                    <div class="composer-buttons">
+                        <button class="add-button">Добавить карточку</button>
+                        <div class="cancel-button">✕</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
-    const authContainer = document.getElementById('auth-container');
-    const projectList = document.getElementById('project-list');
-    const board = document.getElementById('board');
-    const logoutButton = document.getElementById('logout-button');
+    <template id="cardTemplate">
+        <div class="card" data-card-id="">
+            <div class="card-labels"></div>
+            <div class="card-title"></div>
+            <div class="card-badges">
+                <div class="card-badge">
+                    <span class="icon">📝</span>
+                    <span>0</span>
+                </div>
+                <div class="card-badge">
+                    <span class="icon">💬</span>
+                    <span>0</span>
+                </div>
+            </div>
+        </div>
+    </template>
 
-    let activeProject = null;
+    <script type="module">
+        // Импорт Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        authContainer.style.display = 'none';
-        projectList.style.display = 'flex';
-        loadProjects();
-      } else {
-        authContainer.style.display = 'flex';
-        projectList.style.display = 'none';
-        board.style.display = 'none';
-      }
-    });
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyANrrrtTUCnTknIzjBh1WZ0qIILwn1Y8Mk",
+            authDomain: "trello1231-3365e.firebaseapp.com",
+            projectId: "trello1231-3365e",
+            storageBucket: "trello1231-3365e.firebasestorage.app",
+            messagingSenderId: "176568505073",
+            appId: "1:176568505073:web:7f4fc8fa5315fd2f490f50",
+        };
 
-    document.getElementById('login-button').addEventListener('click', () => {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
+        // Инициализация Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          authContainer.style.display = 'none';
-          projectList.style.display = 'flex';
-          loadProjects();
-        })
-        .catch(error => {
-          console.error('Ошибка авторизации:', error);
-          alert('Неверный email или пароль');
+        // Элементы DOM
+        const authContainer = document.getElementById('auth-container');
+        const navbar = document.querySelector('.navbar');
+        const boardHeader = document.querySelector('.board-header');
+        const boardContent = document.getElementById('boardContent');
+        const signOutButton = document.getElementById('sign-out');
+
+        // Обработчики для входа и регистрации
+        document.getElementById('sign-in').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log('User signed in:', user);
+                    showAppContent();
+                })
+                .catch((error) => {
+                    console.error('Error signing in:', error.message);
+                    alert('Ошибка входа: ' + error.message);
+                });
         });
-    });
 
-    logoutButton.addEventListener('click', () => {
-      auth.signOut()
-        .then(() => {
-          authContainer.style.display = 'flex';
-          projectList.style.display = 'none';
-          board.style.display = 'none';
-        })
-        .catch(error => console.error('Ошибка выхода:', error));
-    });
-
-    function loadProjects() {
-      projectList.innerHTML = '<button id="add-project-button">Добавить проект</button>';
-
-      document.getElementById('add-project-button').addEventListener('click', addProject);
-
-      firestore.collection('projects').get()
-        .then(snapshot => {
-          snapshot.forEach(doc => {
-            const project = doc.data();
-            const projectElement = document.createElement('div');
-            projectElement.className = 'project';
-
-            const projectName = document.createElement('span');
-            projectName.textContent = project.name;
-            projectName.addEventListener('click', () => openProject(doc.id));
-
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-project';
-            deleteButton.textContent = 'Удалить';
-            deleteButton.addEventListener('click', () => deleteProject(doc.id));
-
-            projectElement.appendChild(projectName);
-            projectElement.appendChild(deleteButton);
-            projectList.appendChild(projectElement);
-          });
+        document.getElementById('sign-up').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log('User signed up:', user);
+                    showAppContent();
+                })
+                .catch((error) => {
+                    console.error('Error signing up:', error.message);
+                    alert('Ошибка регистрации: ' + error.message);
+                });
         });
-    }
 
-    function addProject() {
-      const projectName = prompt('Введите имя нового проекта:');
-      if (!projectName) return;
-
-      firestore.collection('projects').where("name", "==", projectName).get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            firestore.collection('projects').add({ name: projectName })
-              .then(() => loadProjects());
-          } else {
-            alert("Проект с таким названием уже существует");
-          }
+        // Выход из системы
+        signOutButton.addEventListener('click', function() {
+            signOut(auth).then(() => {
+                console.log('User signed out');
+                showAuthForm();
+            }).catch((error) => {
+                console.error('Error signing out:', error.message);
+            });
         });
-    }
 
-    function deleteProject(projectId) {
-      firestore.collection('projects').doc(projectId).delete()
-        .then(() => loadProjects());
-    }
-
-    function openProject(projectId) {
-      activeProject = projectId;
-      board.style.display = 'flex';
-
-      firestore.collection('projects').doc(projectId).collection('tasks').get()
-        .then(snapshot => {
-          document.querySelectorAll('.tasks').forEach(container => container.innerHTML = '');
-          snapshot.forEach(doc => {
-            const task = doc.data();
-            const taskElement = createTaskElement(doc.id, task.name, task.column);
-            document.getElementById(task.column + '-tasks').appendChild(taskElement);
-          });
+        // Отслеживание состояния аутентификации
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('User is signed in:', user);
+                showAppContent();
+            } else {
+                console.log('User is signed out');
+                showAuthForm();
+            }
         });
-    }
 
-    function createTaskElement(taskId, taskText, column) {
-      const task = document.createElement('div');
-      task.className = 'task';
-      task.textContent = taskText;
-      task.draggable = true;
-      task.setAttribute('data-task-id', taskId);
-
-      task.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('taskId', taskId);
-      });
-
-      task.addEventListener('dragend', (e) => {
-        e.target.style.background = '#ffffff';
-      });
-
-      if (column === 'done') {
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'delete-task';
-        deleteButton.textContent = 'Удалить';
-        deleteButton.addEventListener('click', () => deleteTask(taskId));
-
-        task.appendChild(deleteButton);
-      }
-
-      return task;
-    }
-
-    function deleteTask(taskId) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).delete()
-        .then(() => openProject(activeProject));
-    }
-
-    function allowDrop(event) {
-      event.preventDefault();
-    }
-
-    function drop(event) {
-      event.preventDefault();
-      const taskId = event.dataTransfer.getData('taskId');
-      const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-      const newColumn = event.target.closest('.column').id;
-
-      if (newColumn && taskElement) {
-        const currentColumn = taskElement.closest('.column').id;
-        if (newColumn !== currentColumn) {
-          updateTaskColumn(taskId, newColumn);
+        // Функция для показа контента приложения
+        function showAppContent() {
+            authContainer.style.display = 'none';
+            navbar.style.display = 'flex';
+            boardHeader.style.display = 'flex';
+            boardContent.style.display = 'flex';
+            signOutButton.style.display = 'block';
         }
-      }
-    }
 
-    function updateTaskColumn(taskId, column) {
-      firestore.collection('projects').doc(activeProject).collection('tasks').doc(taskId).update({ column })
-        .then(() => openProject(activeProject));
-    }
-    
-    document.querySelectorAll('.add-button').forEach(button => {
-      button.addEventListener('click', addTask);
-    });
+        // Функция для показа формы авторизации
+        function showAuthForm() {
+            authContainer.style.display = 'flex';
+            navbar.style.display = 'none';
+            boardHeader.style.display = 'none';
+            boardContent.style.display = 'none';
+            signOutButton.style.display = 'none';
+        }
 
-    function addTask(event) {
-      const columnId = event.target.closest('.column').id;
-      const taskInput = event.target.previousElementSibling;
-      const taskText = taskInput.value.trim();
+        // Остальной код вашего приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            let lists = [];
+            let cards = [];
+            let nextListId = 1;
+            let nextCardId = 1;
+            let cardBeingDragged = null;
+            let dropTarget = null;
+            let currentCardId = null;
 
-      if (taskText === '') return;
+            const addListButton = document.getElementById('addListButton');
+            const listComposer = document.getElementById('listComposer');
+            const listInput = listComposer.querySelector('input');
+            const submitListButton = document.getElementById('submitListButton');
+            const cancelListButton = document.getElementById('cancelListButton');
+            const cardModal = document.getElementById('cardModal');
+            const closeCardModal = document.getElementById('closeCardModal');
+            const modalCardTitle = document.getElementById('modalCardTitle');
+            const modalListName = document.getElementById('modalListName');
+            const modalDescription = document.getElementById('modalDescription');
+            const modalDescriptionEdit = document.getElementById('modalDescriptionEdit');
 
-      const task = {
-        name: taskText,
-        column: columnId,
-      };
+            const listTemplate = document.getElementById('listTemplate');
+            const cardTemplate = document.getElementById('cardTemplate');
 
-      firestore.collection('projects').doc(activeProject).collection('tasks').add(task)
-        .then(() => {
-          taskInput.value = '';  // Очистить поле ввода
-          openProject(activeProject);  // Перезагрузить задачи на доске
-        })
-        .catch(error => {
-          console.error('Ошибка при добавлении задачи:', error);
-          alert('Не удалось добавить задачу');
+            function createList(title) {
+                const listId = `list-${nextListId++}`;
+                const list = {
+                    id: listId,
+                    title: title
+                };
+                lists.push(list);
+                renderList(list);
+                return list;
+            }
+
+            function createCard(listId, title) {
+                const cardId = `card-${nextCardId++}`;
+                const card = {
+                    id: cardId,
+                    listId: listId,
+                    title: title,
+                    description: '',
+                    labels: [],
+                    comments: []
+                };
+                cards.push(card);
+                renderCard(card);
+                return card;
+            }
+
+            function renderList(list) {
+                const clone = document.importNode(listTemplate.content, true);
+                const listWrapper = clone.querySelector('.list-wrapper');
+                const listTitle = clone.querySelector('.list-title');
+                const listTitleEdit = clone.querySelector('.list-title-edit');
+                const addCardButton = clone.querySelector('.add-card');
+                const cardComposer = clone.querySelector('.card-composer');
+                const cardTextarea = cardComposer.querySelector('textarea');
+                const addCardSubmit = cardComposer.querySelector('.add-button');
+                const cancelCardButton = cardComposer.querySelector('.cancel-button');
+
+                listWrapper.dataset.listId = list.id;
+                listTitle.textContent = list.title;
+
+                const listCards = cards.filter(card => card.listId === list.id);
+                const listCardsContainer = clone.querySelector('.list-cards');
+                listCards.forEach(card => {
+                    const cardElement = renderCardElement(card);
+                    listCardsContainer.appendChild(cardElement);
+                });
+
+                listTitle.addEventListener('click', function() {
+                    listTitle.style.display = 'none';
+                    listTitleEdit.style.display = 'block';
+                    listTitleEdit.value = listTitle.textContent;
+                    listTitleEdit.focus();
+                });
+
+                listTitleEdit.addEventListener('blur', function() {
+                    listTitle.style.display = 'block';
+                    listTitleEdit.style.display = 'none';
+                    if (listTitleEdit.value.trim() !== '') {
+                        listTitle.textContent = listTitleEdit.value;
+                        list.title = listTitleEdit.value;
+                    }
+                });
+
+                listTitleEdit.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        listTitleEdit.blur();
+                    }
+                });
+
+                addCardButton.addEventListener('click', function() {
+                    addCardButton.style.display = 'none';
+                    cardComposer.style.display = 'block';
+                    cardTextarea.focus();
+                });
+
+                addCardSubmit.addEventListener('click', function() {
+                    if (cardTextarea.value.trim() !== '') {
+                        const card = createCard(list.id, cardTextarea.value.trim());
+                        const cardElement = renderCardElement(card);
+                        listCardsContainer.appendChild(cardElement);
+                        cardTextarea.value = '';
+                    }
+                    cardComposer.style.display = 'none';
+                    addCardButton.style.display = 'flex';
+                });
+
+                cancelCardButton.addEventListener('click', function() {
+                    cardTextarea.value = '';
+                    cardComposer.style.display = 'none';
+                    addCardButton.style.display = 'flex';
+                });
+
+                listCardsContainer.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+
+                    const afterElement = getDragAfterElement(listCardsContainer, e.clientY);
+                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
+
+                    if (dropIndicator) {
+                        dropIndicator.remove();
+                    }
+
+                    if (afterElement == null) {
+                        listCardsContainer.appendChild(createDropIndicator());
+                    } else {
+                        listCardsContainer.insertBefore(createDropIndicator(), afterElement);
+                    }
+
+                    dropTarget = {
+                        listId: list.id,
+                        afterElement: afterElement
+                    };
+                });
+
+                listCardsContainer.addEventListener('dragleave', function() {
+                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
+                    if (dropIndicator) {
+                        dropIndicator.remove();
+                    }
+                });
+
+                listCardsContainer.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
+                    if (dropIndicator) {
+                        dropIndicator.remove();
+                    }
+
+                    if (cardBeingDragged) {
+                        const card = cards.find(c => c.id === cardBeingDragged);
+                        if (card) {
+                            const oldListId = card.listId;
+                            card.listId = list.id;
+
+                            const cardElement = document.querySelector(`[data-card-id="${card.id}"]`);
+                            cardElement.classList.remove('dragging');
+
+                            if (dropTarget.afterElement == null) {
+                                listCardsContainer.appendChild(cardElement);
+                            } else {
+                                listCardsContainer.insertBefore(cardElement, dropTarget.afterElement);
+                            }
+                        }
+                        cardBeingDragged = null;
+                    }
+                });
+
+                boardContent.insertBefore(clone, document.querySelector('.add-list-wrapper'));
+            }
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            function createDropIndicator() {
+                const indicator = document.createElement('div');
+                indicator.className = 'drop-indicator';
+                indicator.style.display = 'block';
+                return indicator;
+            }
+
+            function renderCard(card) {
+                const listCardsContainer = document.querySelector(`[data-list-id="${card.listId}"] .list-cards`);
+                if (listCardsContainer) {
+                    const cardElement = renderCardElement(card);
+                    listCardsContainer.appendChild(cardElement);
+                }
+            }
+
+            function renderCardElement(card) {
+                const clone = document.importNode(cardTemplate.content, true);
+                const cardElement = clone.querySelector('.card');
+                const cardTitle = clone.querySelector('.card-title');
+                const cardLabels = clone.querySelector('.card-labels');
+
+                cardElement.dataset.cardId = card.id;
+                cardTitle.textContent = card.title;
+
+                if (card.labels && card.labels.length > 0) {
+                    card.labels.forEach(label => {
+                        const labelElement = document.createElement('div');
+                        labelElement.className = `card-label label-${label}`;
+                        cardLabels.appendChild(labelElement);
+                    });
+                }
+
+                cardElement.addEventListener('click', function() {
+                    openCardModal(card);
+                });
+
+                cardElement.setAttribute('draggable', 'true');
+
+                cardElement.addEventListener('dragstart', function() {
+                    cardElement.classList.add('dragging');
+                    cardBeingDragged = card.id;
+                });
+
+                cardElement.addEventListener('dragend', function() {
+                    cardElement.classList.remove('dragging');
+
+                    document.querySelectorAll('.drop-indicator').forEach(indicator => {
+                        indicator.remove();
+                    });
+                });
+
+                return cardElement;
+            }
+
+            function openCardModal(card) {
+                currentCardId = card.id;
+                modalCardTitle.value = card.title;
+                const list = lists.find(l => l.id === card.listId);
+                modalListName.textContent = list ? list.title : '';
+
+                modalDescription.textContent = card.description || 'Добавить более подробное описание...';
+                modalDescriptionEdit.value = card.description || '';
+
+                cardModal.style.display = 'flex';
+
+                modalCardTitle.focus();
+            }
+
+            function getCard(cardId) {
+                return cards.find(card => card.id === cardId);
+            }
+
+            function updateCardTitle(cardId, newTitle) {
+                const card = getCard(cardId);
+                if (card) {
+                    card.title = newTitle;
+                    const cardElement = document.querySelector(`[data-card-id="${cardId}"] .card-title`);
+                    if (cardElement) {
+                        cardElement.textContent = newTitle;
+                    }
+                }
+            }
+
+            function updateCardDescription(cardId, newDescription) {
+                const card = getCard(cardId);
+                if (card) {
+                    card.description = newDescription;
+                }
+            }
+
+            function addLabelToCard(cardId, label) {
+                const card = getCard(cardId);
+                if (card && !card.labels.includes(label)) {
+                    card.labels.push(label);
+                    const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+                    if (cardElement) {
+                        const labelsContainer = cardElement.querySelector('.card-labels');
+                        const labelElement = document.createElement('div');
+                        labelElement.className = `card-label label-${label}`;
+                        labelsContainer.appendChild(labelElement);
+                    }
+                }
+            }
+
+            addListButton.addEventListener('click', function() {
+                addListButton.style.display = 'none';
+                listComposer.style.display = 'block';
+                listInput.focus();
+            });
+
+            submitListButton.addEventListener('click', function() {
+                if (listInput.value.trim() !== '') {
+                    createList(listInput.value.trim());
+                    listInput.value = '';
+                }
+                listComposer.style.display = 'none';
+                addListButton.style.display = 'flex';
+            });
+
+            cancelListButton.addEventListener('click', function() {
+                listInput.value = '';
+                listComposer.style.display = 'none';
+                addListButton.style.display = 'flex';
+            });
+
+            listInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitListButton.click();
+                }
+            });
+
+            closeCardModal.addEventListener('click', function() {
+                cardModal.style.display = 'none';
+                saveCardChanges();
+            });
+
+            cardModal.addEventListener('click', function(e) {
+                if (e.target === cardModal) {
+                    cardModal.style.display = 'none';
+                    saveCardChanges();
+                }
+            });
+
+            modalCardTitle.addEventListener('input', function() {
+                if (currentCardId) {
+                    updateCardTitle(currentCardId, modalCardTitle.value);
+                }
+            });
+
+            modalDescription.addEventListener('click', function() {
+                modalDescription.style.display = 'none';
+                modalDescriptionEdit.style.display = 'block';
+                modalDescriptionEdit.focus();
+            });
+
+            modalDescriptionEdit.addEventListener('blur', function() {
+                modalDescription.style.display = 'block';
+                modalDescriptionEdit.style.display = 'none';
+                if (currentCardId) {
+                    const description = modalDescriptionEdit.value.trim();
+                    updateCardDescription(currentCardId, description);
+                    modalDescription.textContent = description || 'Добавить более подробное описание...';
+                }
+            });
+
+            function saveCardChanges() {
+                if (currentCardId) {
+                    const title = modalCardTitle.value.trim();
+                    const description = modalDescriptionEdit.value.trim();
+
+                    if (title !== '') {
+                        updateCardTitle(currentCardId, title);
+                    }
+
+                    updateCardDescription(currentCardId, description);
+                }
+                currentCardId = null;
+            }
+
+            function initializeApp() {
+                const todoList = createList('Сделать');
+                const inProgressList = createList('В процессе');
+                const doneList = createList('Готово');
+
+                createCard(todoList.id, 'Спланировать встречу команды');
+                createCard(todoList.id, 'Подготовить презентацию проекта');
+
+                const card = createCard(inProgressList.id, 'Разработка прототипа');
+                cards.find(c => c.id === card.id).labels = ['green', 'red'];
+                const cardElement = document.querySelector(`[data-card-id="${card.id}"]`);
+                const labelsContainer = cardElement.querySelector('.card-labels');
+                ['green', 'red'].forEach(label => {
+                    const labelElement = document.createElement('div');
+                    labelElement.className = `card-label label-${label}`;
+                    labelsContainer.appendChild(labelElement);
+                });
+
+                createCard(inProgressList.id, 'Тестирование новых функций');
+                createCard(doneList.id, 'Создание базы данных');
+                createCard(doneList.id, 'Настройка сервера');
+            }
+
+            initializeApp();
         });
-    }
-  </script>
+    </script>
 </body>
 </html>
