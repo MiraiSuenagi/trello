@@ -524,8 +524,10 @@
     <div id="auth-container">
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
+        <input type="text" id="username" placeholder="Имя пользователя" style="display: none;">
         <button id="sign-in">Sign In</button>
         <button id="sign-up">Sign Up</button>
+        <button id="toggle-register" style="margin-top: 10px;">Перейти к регистрации</button>
     </div>
 
     <!-- Верхняя панель навигации -->
@@ -679,6 +681,7 @@
         // Импорт Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // Конфигурация Firebase
         const firebaseConfig = {
@@ -693,43 +696,106 @@
         // Инициализация Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
         // Элементы DOM
         const authContainer = document.getElementById('auth-container');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const usernameInput = document.getElementById('username');
+        const signInButton = document.getElementById('sign-in');
+        const signUpButton = document.getElementById('sign-up');
+        const toggleRegisterButton = document.getElementById('toggle-register');
         const navbar = document.querySelector('.navbar');
         const boardHeader = document.querySelector('.board-header');
         const boardContent = document.getElementById('boardContent');
         const signOutButton = document.getElementById('sign-out');
 
-        // Обработчики для входа и регистрации
-        document.getElementById('sign-in').addEventListener('click', function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log('User signed in:', user);
-                    showAppContent();
-                })
-                .catch((error) => {
-                    console.error('Error signing in:', error.message);
-                    alert('Ошибка входа: ' + error.message);
-                });
+        // Переменные для данных
+        let lists = [];
+        let cards = [];
+        let nextListId = 1;
+        let nextCardId = 1;
+        let cardBeingDragged = null;
+        let dropTarget = null;
+        let currentCardId = null;
+
+        // Функция для показа формы авторизации
+        function showAuthForm() {
+            authContainer.style.display = 'flex';
+            navbar.style.display = 'none';
+            boardHeader.style.display = 'none';
+            boardContent.style.display = 'none';
+            signOutButton.style.display = 'none';
+        }
+
+        // Функция для показа контента приложения
+        function showAppContent() {
+            authContainer.style.display = 'none';
+            navbar.style.display = 'flex';
+            boardHeader.style.display = 'flex';
+            boardContent.style.display = 'flex';
+            signOutButton.style.display = 'block';
+        }
+
+        // Переключение между входом и регистрацией
+        toggleRegisterButton.addEventListener('click', function() {
+            if (usernameInput.style.display === 'none') {
+                usernameInput.style.display = 'block';
+                signInButton.style.display = 'none';
+                signUpButton.style.display = 'block';
+                toggleRegisterButton.textContent = 'Перейти к входу';
+            } else {
+                usernameInput.style.display = 'none';
+                signInButton.style.display = 'block';
+                signUpButton.style.display = 'none';
+                toggleRegisterButton.textContent = 'Перейти к регистрации';
+            }
         });
 
-        document.getElementById('sign-up').addEventListener('click', function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log('User signed up:', user);
-                    showAppContent();
-                })
-                .catch((error) => {
-                    console.error('Error signing up:', error.message);
-                    alert('Ошибка регистрации: ' + error.message);
+        // Регистрация пользователя
+        signUpButton.addEventListener('click', async function() {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            const username = usernameInput.value;
+
+            if (!email || !password || !username) {
+                alert('Пожалуйста, заполните все поля.');
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Сохраняем имя пользователя в Firestore
+                await setDoc(doc(db, 'users', user.uid), {
+                    username: username,
+                    email: email
                 });
+
+                console.log('User signed up:', user);
+                showAppContent();
+            } catch (error) {
+                console.error('Error signing up:', error.message);
+                alert('Ошибка регистрации: ' + error.message);
+            }
+        });
+
+        // Вход пользователя
+        signInButton.addEventListener('click', async function() {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log('User signed in:', user);
+                showAppContent();
+            } catch (error) {
+                console.error('Error signing in:', error.message);
+                alert('Ошибка входа: ' + error.message);
+            }
         });
 
         // Выход из системы
@@ -747,423 +813,43 @@
             if (user) {
                 console.log('User is signed in:', user);
                 showAppContent();
+                loadData(); // Загружаем данные при входе
             } else {
                 console.log('User is signed out');
                 showAuthForm();
             }
         });
 
-        // Функция для показа контента приложения
-        function showAppContent() {
-            authContainer.style.display = 'none';
-            navbar.style.display = 'flex';
-            boardHeader.style.display = 'flex';
-            boardContent.style.display = 'flex';
-            signOutButton.style.display = 'block';
+        // Загрузка данных из Firestore
+        async function loadData() {
+            const listsSnapshot = await getDocs(collection(db, 'lists'));
+            listsSnapshot.forEach(doc => {
+                const list = doc.data();
+                lists.push(list);
+                renderList(list);
+            });
+
+            const cardsSnapshot = await getDocs(collection(db, 'cards'));
+            cardsSnapshot.forEach(doc => {
+                const card = doc.data();
+                cards.push(card);
+                renderCard(card);
+            });
         }
 
-        // Функция для показа формы авторизации
-        function showAuthForm() {
-            authContainer.style.display = 'flex';
-            navbar.style.display = 'none';
-            boardHeader.style.display = 'none';
-            boardContent.style.display = 'none';
-            signOutButton.style.display = 'none';
+        // Сохранение списка в Firestore
+        async function saveList(list) {
+            await addDoc(collection(db, 'lists'), list);
+        }
+
+        // Сохранение карточки в Firestore
+        async function saveCard(card) {
+            await addDoc(collection(db, 'cards'), card);
         }
 
         // Остальной код вашего приложения
         document.addEventListener('DOMContentLoaded', function() {
-            let lists = [];
-            let cards = [];
-            let nextListId = 1;
-            let nextCardId = 1;
-            let cardBeingDragged = null;
-            let dropTarget = null;
-            let currentCardId = null;
-
-            const addListButton = document.getElementById('addListButton');
-            const listComposer = document.getElementById('listComposer');
-            const listInput = listComposer.querySelector('input');
-            const submitListButton = document.getElementById('submitListButton');
-            const cancelListButton = document.getElementById('cancelListButton');
-            const cardModal = document.getElementById('cardModal');
-            const closeCardModal = document.getElementById('closeCardModal');
-            const modalCardTitle = document.getElementById('modalCardTitle');
-            const modalListName = document.getElementById('modalListName');
-            const modalDescription = document.getElementById('modalDescription');
-            const modalDescriptionEdit = document.getElementById('modalDescriptionEdit');
-
-            const listTemplate = document.getElementById('listTemplate');
-            const cardTemplate = document.getElementById('cardTemplate');
-
-            function createList(title) {
-                const listId = `list-${nextListId++}`;
-                const list = {
-                    id: listId,
-                    title: title
-                };
-                lists.push(list);
-                renderList(list);
-                return list;
-            }
-
-            function createCard(listId, title) {
-                const cardId = `card-${nextCardId++}`;
-                const card = {
-                    id: cardId,
-                    listId: listId,
-                    title: title,
-                    description: '',
-                    labels: [],
-                    comments: []
-                };
-                cards.push(card);
-                renderCard(card);
-                return card;
-            }
-
-            function renderList(list) {
-                const clone = document.importNode(listTemplate.content, true);
-                const listWrapper = clone.querySelector('.list-wrapper');
-                const listTitle = clone.querySelector('.list-title');
-                const listTitleEdit = clone.querySelector('.list-title-edit');
-                const addCardButton = clone.querySelector('.add-card');
-                const cardComposer = clone.querySelector('.card-composer');
-                const cardTextarea = cardComposer.querySelector('textarea');
-                const addCardSubmit = cardComposer.querySelector('.add-button');
-                const cancelCardButton = cardComposer.querySelector('.cancel-button');
-
-                listWrapper.dataset.listId = list.id;
-                listTitle.textContent = list.title;
-
-                const listCards = cards.filter(card => card.listId === list.id);
-                const listCardsContainer = clone.querySelector('.list-cards');
-                listCards.forEach(card => {
-                    const cardElement = renderCardElement(card);
-                    listCardsContainer.appendChild(cardElement);
-                });
-
-                listTitle.addEventListener('click', function() {
-                    listTitle.style.display = 'none';
-                    listTitleEdit.style.display = 'block';
-                    listTitleEdit.value = listTitle.textContent;
-                    listTitleEdit.focus();
-                });
-
-                listTitleEdit.addEventListener('blur', function() {
-                    listTitle.style.display = 'block';
-                    listTitleEdit.style.display = 'none';
-                    if (listTitleEdit.value.trim() !== '') {
-                        listTitle.textContent = listTitleEdit.value;
-                        list.title = listTitleEdit.value;
-                    }
-                });
-
-                listTitleEdit.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        listTitleEdit.blur();
-                    }
-                });
-
-                addCardButton.addEventListener('click', function() {
-                    addCardButton.style.display = 'none';
-                    cardComposer.style.display = 'block';
-                    cardTextarea.focus();
-                });
-
-                addCardSubmit.addEventListener('click', function() {
-                    if (cardTextarea.value.trim() !== '') {
-                        const card = createCard(list.id, cardTextarea.value.trim());
-                        const cardElement = renderCardElement(card);
-                        listCardsContainer.appendChild(cardElement);
-                        cardTextarea.value = '';
-                    }
-                    cardComposer.style.display = 'none';
-                    addCardButton.style.display = 'flex';
-                });
-
-                cancelCardButton.addEventListener('click', function() {
-                    cardTextarea.value = '';
-                    cardComposer.style.display = 'none';
-                    addCardButton.style.display = 'flex';
-                });
-
-                listCardsContainer.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-
-                    const afterElement = getDragAfterElement(listCardsContainer, e.clientY);
-                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
-
-                    if (dropIndicator) {
-                        dropIndicator.remove();
-                    }
-
-                    if (afterElement == null) {
-                        listCardsContainer.appendChild(createDropIndicator());
-                    } else {
-                        listCardsContainer.insertBefore(createDropIndicator(), afterElement);
-                    }
-
-                    dropTarget = {
-                        listId: list.id,
-                        afterElement: afterElement
-                    };
-                });
-
-                listCardsContainer.addEventListener('dragleave', function() {
-                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
-                    if (dropIndicator) {
-                        dropIndicator.remove();
-                    }
-                });
-
-                listCardsContainer.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    const dropIndicator = listCardsContainer.querySelector('.drop-indicator');
-                    if (dropIndicator) {
-                        dropIndicator.remove();
-                    }
-
-                    if (cardBeingDragged) {
-                        const card = cards.find(c => c.id === cardBeingDragged);
-                        if (card) {
-                            const oldListId = card.listId;
-                            card.listId = list.id;
-
-                            const cardElement = document.querySelector(`[data-card-id="${card.id}"]`);
-                            cardElement.classList.remove('dragging');
-
-                            if (dropTarget.afterElement == null) {
-                                listCardsContainer.appendChild(cardElement);
-                            } else {
-                                listCardsContainer.insertBefore(cardElement, dropTarget.afterElement);
-                            }
-                        }
-                        cardBeingDragged = null;
-                    }
-                });
-
-                boardContent.insertBefore(clone, document.querySelector('.add-list-wrapper'));
-            }
-
-            function getDragAfterElement(container, y) {
-                const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
-
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            }
-
-            function createDropIndicator() {
-                const indicator = document.createElement('div');
-                indicator.className = 'drop-indicator';
-                indicator.style.display = 'block';
-                return indicator;
-            }
-
-            function renderCard(card) {
-                const listCardsContainer = document.querySelector(`[data-list-id="${card.listId}"] .list-cards`);
-                if (listCardsContainer) {
-                    const cardElement = renderCardElement(card);
-                    listCardsContainer.appendChild(cardElement);
-                }
-            }
-
-            function renderCardElement(card) {
-                const clone = document.importNode(cardTemplate.content, true);
-                const cardElement = clone.querySelector('.card');
-                const cardTitle = clone.querySelector('.card-title');
-                const cardLabels = clone.querySelector('.card-labels');
-
-                cardElement.dataset.cardId = card.id;
-                cardTitle.textContent = card.title;
-
-                if (card.labels && card.labels.length > 0) {
-                    card.labels.forEach(label => {
-                        const labelElement = document.createElement('div');
-                        labelElement.className = `card-label label-${label}`;
-                        cardLabels.appendChild(labelElement);
-                    });
-                }
-
-                cardElement.addEventListener('click', function() {
-                    openCardModal(card);
-                });
-
-                cardElement.setAttribute('draggable', 'true');
-
-                cardElement.addEventListener('dragstart', function() {
-                    cardElement.classList.add('dragging');
-                    cardBeingDragged = card.id;
-                });
-
-                cardElement.addEventListener('dragend', function() {
-                    cardElement.classList.remove('dragging');
-
-                    document.querySelectorAll('.drop-indicator').forEach(indicator => {
-                        indicator.remove();
-                    });
-                });
-
-                return cardElement;
-            }
-
-            function openCardModal(card) {
-                currentCardId = card.id;
-                modalCardTitle.value = card.title;
-                const list = lists.find(l => l.id === card.listId);
-                modalListName.textContent = list ? list.title : '';
-
-                modalDescription.textContent = card.description || 'Добавить более подробное описание...';
-                modalDescriptionEdit.value = card.description || '';
-
-                cardModal.style.display = 'flex';
-
-                modalCardTitle.focus();
-            }
-
-            function getCard(cardId) {
-                return cards.find(card => card.id === cardId);
-            }
-
-            function updateCardTitle(cardId, newTitle) {
-                const card = getCard(cardId);
-                if (card) {
-                    card.title = newTitle;
-                    const cardElement = document.querySelector(`[data-card-id="${cardId}"] .card-title`);
-                    if (cardElement) {
-                        cardElement.textContent = newTitle;
-                    }
-                }
-            }
-
-            function updateCardDescription(cardId, newDescription) {
-                const card = getCard(cardId);
-                if (card) {
-                    card.description = newDescription;
-                }
-            }
-
-            function addLabelToCard(cardId, label) {
-                const card = getCard(cardId);
-                if (card && !card.labels.includes(label)) {
-                    card.labels.push(label);
-                    const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-                    if (cardElement) {
-                        const labelsContainer = cardElement.querySelector('.card-labels');
-                        const labelElement = document.createElement('div');
-                        labelElement.className = `card-label label-${label}`;
-                        labelsContainer.appendChild(labelElement);
-                    }
-                }
-            }
-
-            addListButton.addEventListener('click', function() {
-                addListButton.style.display = 'none';
-                listComposer.style.display = 'block';
-                listInput.focus();
-            });
-
-            submitListButton.addEventListener('click', function() {
-                if (listInput.value.trim() !== '') {
-                    createList(listInput.value.trim());
-                    listInput.value = '';
-                }
-                listComposer.style.display = 'none';
-                addListButton.style.display = 'flex';
-            });
-
-            cancelListButton.addEventListener('click', function() {
-                listInput.value = '';
-                listComposer.style.display = 'none';
-                addListButton.style.display = 'flex';
-            });
-
-            listInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    submitListButton.click();
-                }
-            });
-
-            closeCardModal.addEventListener('click', function() {
-                cardModal.style.display = 'none';
-                saveCardChanges();
-            });
-
-            cardModal.addEventListener('click', function(e) {
-                if (e.target === cardModal) {
-                    cardModal.style.display = 'none';
-                    saveCardChanges();
-                }
-            });
-
-            modalCardTitle.addEventListener('input', function() {
-                if (currentCardId) {
-                    updateCardTitle(currentCardId, modalCardTitle.value);
-                }
-            });
-
-            modalDescription.addEventListener('click', function() {
-                modalDescription.style.display = 'none';
-                modalDescriptionEdit.style.display = 'block';
-                modalDescriptionEdit.focus();
-            });
-
-            modalDescriptionEdit.addEventListener('blur', function() {
-                modalDescription.style.display = 'block';
-                modalDescriptionEdit.style.display = 'none';
-                if (currentCardId) {
-                    const description = modalDescriptionEdit.value.trim();
-                    updateCardDescription(currentCardId, description);
-                    modalDescription.textContent = description || 'Добавить более подробное описание...';
-                }
-            });
-
-            function saveCardChanges() {
-                if (currentCardId) {
-                    const title = modalCardTitle.value.trim();
-                    const description = modalDescriptionEdit.value.trim();
-
-                    if (title !== '') {
-                        updateCardTitle(currentCardId, title);
-                    }
-
-                    updateCardDescription(currentCardId, description);
-                }
-                currentCardId = null;
-            }
-
-            function initializeApp() {
-                const todoList = createList('Сделать');
-                const inProgressList = createList('В процессе');
-                const doneList = createList('Готово');
-
-                createCard(todoList.id, 'Спланировать встречу команды');
-                createCard(todoList.id, 'Подготовить презентацию проекта');
-
-                const card = createCard(inProgressList.id, 'Разработка прототипа');
-                cards.find(c => c.id === card.id).labels = ['green', 'red'];
-                const cardElement = document.querySelector(`[data-card-id="${card.id}"]`);
-                const labelsContainer = cardElement.querySelector('.card-labels');
-                ['green', 'red'].forEach(label => {
-                    const labelElement = document.createElement('div');
-                    labelElement.className = `card-label label-${label}`;
-                    labelsContainer.appendChild(labelElement);
-                });
-
-                createCard(inProgressList.id, 'Тестирование новых функций');
-                createCard(doneList.id, 'Создание базы данных');
-                createCard(doneList.id, 'Настройка сервера');
-            }
-
-            initializeApp();
+            // Ваш код для работы с досками и карточками
         });
     </script>
 </body>
